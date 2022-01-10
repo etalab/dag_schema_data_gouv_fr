@@ -1,0 +1,5 @@
+consolidated_data/
+ref_tables/
+report_tables/
+**/.DS_Store
+**/.ipynb_checkpoints
