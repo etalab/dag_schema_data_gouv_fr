@@ -16,6 +16,18 @@ arsante/schema-dae:
 datakode/schema-pei:
   consolidate: true
   publication: false
+etalab/schema-comptage-mobilites-channel:
+  consolidate: false
+  search_words:
+  - "Comptage des mobilit\xE9s (Channel)"
+etalab/schema-comptage-mobilites-measure:
+  consolidate: false
+  search_words:
+  - "Comptage des mobilit\xE9s (measure)"
+etalab/schema-comptage-mobilites-site:
+  consolidate: false
+  search_words:
+  - "Comptage des mobilit\xE9s (Site)"
 etalab/schema-decp-dpa:
   consolidate: true
   publication: false
@@ -27,23 +39,23 @@ etalab/schema-inclusion-numerique:
   publication: false
 etalab/schema-irve:
   consolidate: true
-  consolidated_dataset_id: '5448d3e0c751df01f85d0572'
-  latest_resource_ids:
-    2.0.2: '8d9398ae-3037-48b2-be19-412c24561fbb'
-  documentation_resource_id: '41b0514d-956d-4e42-80ef-1dcf88cc74e9'
-  exclude_dataset_ids:
-  - '54231d4a88ee38334b5b9e1d'
+  consolidated_dataset_id: 5448d3e0c751df01f85d0572
+  documentation_resource_id: 41b0514d-956d-4e42-80ef-1dcf88cc74e9
   drop_versions:
-  - '1.0.0'
-  - '1.0.1'
-  - '1.0.2'
-  - '1.0.3'
-  - '2.0.0'
-  - '2.0.1'
+  - 1.0.0
+  - 1.0.1
+  - 1.0.2
+  - 1.0.3
+  - 2.0.0
+  - 2.0.1
+  exclude_dataset_ids:
+  - 54231d4a88ee38334b5b9e1d
+  latest_resource_ids:
+    2.0.2: 8d9398ae-3037-48b2-be19-412c24561fbb
+  publication: true
   search_words:
   - "Infrastructures de recharge pour v\xE9hicules \xE9lectriques"
   - IRVE
-  publication: true
 etalab/schema-lieux-covoiturage:
   consolidate: true
   publication: false
@@ -83,6 +95,10 @@ scdl/menus-collectifs:
 scdl/plats-menus-collectifs:
   consolidate: true
   publication: false
+scdl/prenoms:
+  consolidate: false
+  search_words:
+  - "Pr\xE9noms des nouveaux-n\xE9s"
 scdl/subventions:
   consolidate: true
   publication: false
