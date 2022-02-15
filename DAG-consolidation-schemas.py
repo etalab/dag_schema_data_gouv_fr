@@ -8,8 +8,6 @@ from airflow.utils.dates import days_ago
 from datetime import timedelta, datetime
 import json
 
-from dag_moderation.utils import check_if_monday, check_if_first_day_of_month
-
 AIRFLOW_DAG_HOME='/opt/airflow/dags/'
 TMP_FOLDER='/tmp/'
 DAG_FOLDER = 'dag_consolidation_schemas/'
@@ -19,10 +17,9 @@ MINIO_URL = Variable.get("minio_url")
 MINIO_BUCKET = Variable.get("minio_bucket_opendata")
 MINIO_USER = Variable.get("secret_minio_user_opendata")
 MINIO_PASSWORD = Variable.get("secret_minio_password_opendata")
-MINIO_PATH = 'datagouv/consolidation_schemas/'
 
 API_KEY = Variable.get("secret_api_key_data_gouv")
-API_URL = "https://www.data.gouv.fr/api/1/"
+API_URL = "https://demo.data.gouv.fr/api/1/"
 
 default_args = {
    'email': ['geoffrey.aldebert@data.gouv.fr'],
