@@ -17,6 +17,7 @@ MINIO_BUCKET = Variable.get("minio_bucket_opendata")
 MINIO_USER = Variable.get("secret_minio_user_opendata")
 MINIO_PASSWORD = Variable.get("secret_minio_password_opendata")
 
+# GIT_REPO = 'git@github.com:etalab/schema.data.gouv.fr.git'
 GIT_REPO = 'git@github.com:etalab/schema.data.gouv.fr.git'
 
 default_args = {

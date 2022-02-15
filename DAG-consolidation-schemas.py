@@ -19,7 +19,7 @@ MINIO_USER = Variable.get("secret_minio_user_opendata")
 MINIO_PASSWORD = Variable.get("secret_minio_password_opendata")
 
 API_KEY = Variable.get("secret_api_key_data_gouv")
-API_URL = "https://demo.data.gouv.fr/api/1/"
+API_URL = "https://www.data.gouv.fr/api/1/"
 
 default_args = {
    'email': ['geoffrey.aldebert@data.gouv.fr'],
