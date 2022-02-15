@@ -3,7 +3,7 @@ from airflow.models import DAG, Variable
 from operators.papermill_minio import PapermillMinioOperator
 from operators.clean_folder import CleanFolderOperator
 from airflow.operators.bash import BashOperator
-from datetime import timedelta
+from datetime import timedelta, datetime
 from airflow.utils.dates import days_ago
 
 
@@ -16,6 +16,8 @@ MINIO_URL = Variable.get("minio_url")
 MINIO_BUCKET = Variable.get("minio_bucket_opendata")
 MINIO_USER = Variable.get("secret_minio_user_opendata")
 MINIO_PASSWORD = Variable.get("secret_minio_password_opendata")
+
+GIT_REPO = 'git@github.com:etalab/schema.data.gouv.fr.git'
 
 default_args = {
    'email': ['geoffrey.aldebert@data.gouv.fr'],
@@ -38,7 +40,8 @@ with DAG(
 
     clone_schema_repo = BashOperator(
         task_id='clone_schema_repo',
-        bash_command='cd '+TMP_FOLDER+DAG_FOLDER+'{{ ds }}'+"/"+' && git clone git@github.com:geoffreyaldebert/schema.data.gouv.fr.git -b test',
+        bash_command='cd '+TMP_FOLDER+DAG_FOLDER+'{{ ds }}'+"/ "+ \
+            '&& git clone ' + GIT_REPO ,
     )
     
     run_nb = PapermillMinioOperator(
@@ -56,18 +59,32 @@ with DAG(
             "WORKING_DIR": AIRFLOW_DAG_HOME+DAG_FOLDER,
             "TMP_FOLDER": TMP_FOLDER+DAG_FOLDER+'{{ ds }}'+"/",
             "OUTPUT_DATA_FOLDER": TMP_FOLDER+DAG_FOLDER+'{{ ds }}'+"/output/",
-            "DATE_AIRFLOW": '{{ ds }}'
+            "DATE_AIRFLOW": '{{ ds }}',
+            "LIST_SCHEMAS_YAML": 'https://raw.githubusercontent.com/etalab/schema.data.gouv.fr/master/aggregateur/repertoires.yml'
         }
     )
 
     copy_files = BashOperator(
         task_id='copy_files',
-        bash_command='cd '+TMP_FOLDER+DAG_FOLDER+'{{ ds }}'+"/"+' && mkdir site && cp -r schema.data.gouv.fr/site/site/*.md ./site/ && cp -r schema.data.gouv.fr/site/site/.vuepress/ ./site/ && rm -rf ./site/.vuepress/public/schemas && mkdir ./site/.vuepress/public/schemas && cp -r data/* ./site/ && cp -r data2/* ./site/.vuepress/public/schemas && cp ./site/.vuepress/public/schemas/*.json ./site/.vuepress/public/ && rm -rf ./schema.data.gouv.fr/site/site && mv ./site ./schema.data.gouv.fr/site/'
+        bash_command='cd ' + TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/" + \
+            ' && mkdir site' + \
+            ' && cp -r schema.data.gouv.fr/site/site/*.md ./site/' + \
+            ' && cp -r schema.data.gouv.fr/site/site/.vuepress/ ./site/' + \
+            ' && rm -rf ./site/.vuepress/public/schemas' + \
+            ' && mkdir ./site/.vuepress/public/schemas' + \
+            ' && cp -r data/* ./site/ ' + \
+            ' && cp -r data2/* ./site/.vuepress/public/schemas' + \
+            ' && cp ./site/.vuepress/public/schemas/*.json ./site/.vuepress/public/' + \
+            ' && rm -rf ./schema.data.gouv.fr/site/site' + \
+            ' && mv ./site ./schema.data.gouv.fr/site/'
     )
 
     commit_changes = BashOperator(
         task_id='commit_changes',
-        bash_command='cd '+TMP_FOLDER+DAG_FOLDER+'{{ ds }}'+"/schema.data.gouv.fr"+' && git add site/site/ && git commit -m "Update Website" && git push origin test'
+        bash_command='cd ' + TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/schema.data.gouv.fr" + \
+            ' && git add site/site/'+ \
+            ' && git commit -m "Update Website ' + datetime.today().strftime('%Y-%m-%d') + '"' \
+            ' && git push origin master'
     )
 
     clean_previous_outputs >> clone_schema_repo >> run_nb >> copy_files >> commit_changes
