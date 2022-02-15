@@ -28,8 +28,8 @@ default_args = {
 
 with DAG(
     dag_id=DAG_NAME,
-    schedule_interval='0 6 * * *',
-    start_date=days_ago(1),
+    schedule_interval='0 6 1,8,15,22,28 * *',
+    start_date=days_ago(10),
     dagrun_timeout=timedelta(minutes=60),
     tags=['schemas','irve','consolidation','datagouv'],
     default_args=default_args,
