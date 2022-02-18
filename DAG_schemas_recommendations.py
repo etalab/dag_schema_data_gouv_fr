@@ -75,7 +75,7 @@ with DAG(
         task_id='commit_changes',
         bash_command='cd ' + TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/schema.data.gouv.fr" + \
             ' && git add site/site/.vuepress/public/api'+ \
-            ' && git commit -m "Update Recommendations ' + datetime.today().strftime('%Y-%m-%d') + '"' \
+            ' && git commit -m "Update Recommendations ' + datetime.today().strftime('%Y-%m-%d') + '" || echo "No changes to commit"' \
             ' && git push origin master'
     )
 
