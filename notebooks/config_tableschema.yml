@@ -10,9 +10,10 @@ MTES-MCT/acceslibre-schema:
 NaturalSolutions/schema-arbre:
   consolidate: true
   publication: false
-arsante/schema-dae:
-  consolidate: true
-  publication: false
+atlasante/schema-dae:
+  consolidate: false
+  search_words:
+  - DAE
 datakode/schema-pei:
   consolidate: true
   publication: false

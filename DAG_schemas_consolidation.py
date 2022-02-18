@@ -19,14 +19,14 @@ MINIO_BUCKET = Variable.get("minio_bucket_opendata")
 MINIO_USER = Variable.get("secret_minio_user_opendata")
 MINIO_PASSWORD = Variable.get("secret_minio_password_opendata")
 
-MATTERMOST_ENDPOINT = Variable.get("secret_mattermost_dataeng_test")
+MATTERMOST_ENDPOINT = Variable.get("secret_mattermost_schema_activite")
 
-# SCHEMA_CATALOG = 'https://schema.data.gouv.fr/schemas/schemas.json'
-SCHEMA_CATALOG = 'https://raw.githubusercontent.com/geoffreyaldebert/schema-test/master/schemas.json'
+SCHEMA_CATALOG = 'https://schema.data.gouv.fr/schemas/schemas.json'
+# SCHEMA_CATALOG = 'https://raw.githubusercontent.com/geoffreyaldebert/schema-test/master/schemas.json'
 
 API_KEY = Variable.get("secret_api_key_data_gouv")
-API_URL = "https://demo.data.gouv.fr/api/1/"
-# API_URL = "https://www.data.gouv.fr/api/1/"
+# API_URL = "https://demo.data.gouv.fr/api/1/"
+API_URL = "https://www.data.gouv.fr/api/1/"
 
 default_args = {
    'email': ['geoffrey.aldebert@data.gouv.fr'],
@@ -77,12 +77,13 @@ def notification_synthese(**kwargs):
                     TMP_FOLDER + DAG_FOLDER + 'liste_erreurs-'+s['name'].replace('/','_') + '.csv'
                 )
 
-                message += '\n- Schéma ***{}***\n - Ressources déclarées : {}\n - Ressources suspectées : {}\n - Ressources valides : {} \n - [Liste des ressources non valides]({})\n'.format(s['title'], \
-                    nb_declares, \
-                    nb_suspectes, \
-                    nb_valides, \
+                message += '\n- Schéma ***{}***\n - Ressources déclarées : {}'.format(s['title'], nb_declares)
+                
+                if(nb_suspectes != 0): message += '\n - Ressources suspectées : {}'.format(nb_suspectes)
+                
+                message += '\n - Ressources valides : {} \n - [Liste des ressources non valides]({})\n'.format(nb_valides, \
                     'https://object.files.data.gouv.fr/opendata/datagouv/schemas_consolidation/' + last_conso + '/liste_erreurs/' + 'liste_erreurs-'+s['name'].replace('/','_') + '.csv' 
-                    )
+                )
 
 
             except:
