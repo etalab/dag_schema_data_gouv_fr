@@ -1,6 +1,8 @@
 notebooks/consolidated_data/
-notebooks/ef_tables/
+notebooks/ref_tables/
 notebooks/report_tables/
+notebooks/data/
+notebooks/output/
 **/.DS_Store
 **/.ipynb_checkpoints
 __pycache__/
