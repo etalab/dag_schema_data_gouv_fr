@@ -2,7 +2,7 @@
 
 Ce repo héberge l'ensemble des scripts d'automatisation liés au schéma de données sur schema.data.gouv.fr.
 
-Les scripts d'automatisation sont développés en tant que DAG Airflow.
+Les scripts d'automatisation sont développés en tant que DAG Airflow. Le code source permettant de générer la stack airflow que nous utilisons est hébergé [sur ce repo](https://github.com/etalab/data-engineering-stack).
 
 3 DAGs sont présents dans ce repo : 
 - DAG permettant de générer l'ensemble de la documentation liée aux schémas sur le site schema.data.gouv.fr. Ce DAG scrute les différents repo Git des schémas référencés, récupère l'ensemble des release et génère la documentation markdown associée. Celle-ci est ensuite poussée vers [le repo du site schema.data.gouv.fr](https://github.com/etalab/schema.data.gouv.fr) pour mise à jour. Ce DAG est executé tous les jours.
