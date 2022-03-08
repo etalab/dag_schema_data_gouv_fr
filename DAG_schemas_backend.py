@@ -59,7 +59,7 @@ with DAG(
             "TMP_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/",
             "OUTPUT_DATA_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/output/",
             "DATE_AIRFLOW": '{{ ds }}',
-            "LIST_SCHEMAS_YAML": 'https://raw.githubusercontent.com/etalab/schema.data.gouv.fr/master/aggregateur/repertoires.yml'
+            "LIST_SCHEMAS_YAML": 'https://raw.githubusercontent.com/etalab/schema.data.gouv.fr/master/repertoires.yml'
         }
     )
 
@@ -82,7 +82,7 @@ with DAG(
         task_id='commit_changes',
         bash_command='cd ' + TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/schema.data.gouv.fr" + \
             ' && git add site/site/'+ \
-            ' && git commit -m "Update Website ' + datetime.today().strftime('%Y-%m-%d') + '"' \
+            ' && git commit -m "Update Website ' + datetime.today().strftime('%Y-%m-%d') + '" || echo "No changes to commit"' \
             ' && git push origin master'
     )
 
