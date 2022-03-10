@@ -38,4 +38,4 @@ def fix_coordinates_order(filepaths: List[str], coordinates_column: str="coordon
         return row
 
     for filepath in filepaths:
-        pd.read_csv(filepath).apply(fix_coordinates, axis=1).to_csv(filepath)
+        pd.read_csv(filepath).apply(fix_coordinates, axis=1).to_csv(filepath, index=False)

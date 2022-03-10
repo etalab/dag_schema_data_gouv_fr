@@ -135,9 +135,12 @@ with DAG(
         parameters=shared_notebooks_params
     )
 
+    schema_irve_path = os.path.join(tmp_folder, 'consolidated_data', 'etalab_schema-irve')
+
     improve_datasets_quality = PythonOperator(
         task_id="improve_datasets_quality",
-        python_callable=lambda: fix_coordinates_order(os.listdir(os.path.join(tmp_folder, 'consolidated_data', 'etalab_schema-irve')))
+        python_callable=lambda schema_path: fix_coordinates_order([os.path.join(schema_path, filename) for filename in os.listdir(schema_path)]),
+        op_args=[schema_irve_path]
     )
 
     upload_consolidation = PapermillMinioOperator(
