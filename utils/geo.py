@@ -35,7 +35,10 @@ def fix_coordinates_order(filepaths: List[str], coordinates_column: str="coordon
         if is_point_in_france(reversed_coordonnees):
             # Coordinates are inverted with lat before lon
             row[coordinates_column] = json.dumps(reversed_coordonnees)
+            fix_coordinates.rows_modified = fix_coordinates.rows_modified + 1
         return row
 
     for filepath in filepaths:
+        fix_coordinates.rows_modified = 0
         pd.read_csv(filepath).apply(fix_coordinates, axis=1).to_csv(filepath, index=False)
+        print(f"Rows modified: {fix_coordinates.rows_modified}")
