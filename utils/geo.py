@@ -25,7 +25,7 @@ def is_point_in_france(coordonnees_xy: List[float]) -> bool:
 
 def fix_coordinates_order(filepaths: List[str], coordinates_column: str="coordonneesXY") -> None:
     """
-    Cette fonction modifie un fichier CSV pour placer la longitude avant la lattitude
+    Cette fonction modifie un fichier CSV pour placer la longitude avant la latitude
     dans la colonne qui contient les deux au format "[lon, lat]".
     """
 
