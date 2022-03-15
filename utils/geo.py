@@ -40,5 +40,6 @@ def fix_coordinates_order(filepaths: List[str], coordinates_column: str="coordon
 
     for filepath in filepaths:
         fix_coordinates.rows_modified = 0
-        pd.read_csv(filepath).apply(fix_coordinates, axis=1).to_csv(filepath, index=False)
-        print(f"Rows modified: {fix_coordinates.rows_modified}")
+        source_df = pd.read_csv(filepath)
+        source_df.apply(fix_coordinates, axis=1).to_csv(filepath, index=False)
+        print(f"Rows modified: {fix_coordinates.rows_modified}/{len(source_df)}")
