@@ -11,7 +11,7 @@ import requests
 from minio import Minio
 import pandas as pd
 
-from dag_schema_data_gouv_fr.utils.geo import fix_coordinates_order, create_lon_lat_cols, export_to_geojson
+from dag_schema_data_gouv_fr.utils.geo import fix_coordinates_order, create_lon_lat_cols, fix_code_insee, export_to_geojson
 
 AIRFLOW_DAG_HOME='/opt/airflow/dags/'
 TMP_FOLDER='/tmp/'
@@ -149,6 +149,12 @@ with DAG(
         op_args=[schema_irve_path]
     )
 
+    enrich_address = PythonOperator(
+        task_id="enrich_address",
+        python_callable=lambda schema_path: fix_code_insee([os.path.join(schema_path, filename) for filename in os.listdir(schema_path)]),
+        op_args=[schema_irve_path]
+    )
+
     create_geojson_export = PythonOperator(
         task_id="create_geojson_export",
         python_callable=lambda schema_path: export_to_geojson([os.path.join(schema_path, filename) for filename in os.listdir(schema_path)]),
@@ -181,4 +187,4 @@ with DAG(
     
 
     
-    clean_previous_outputs >> run_nb_consolidation >> reorder_coordinates >> add_lon_lat_cols >> create_geojson_export >> upload_consolidation >> notification_synthese
+    clean_previous_outputs >> run_nb_consolidation >> reorder_coordinates >> add_lon_lat_cols >> enrich_address >> create_geojson_export >> upload_consolidation >> notification_synthese
