@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 import geojson
 import json
 import os
@@ -6,9 +6,8 @@ import pandas as pd
 import requests
 from shapely.geometry import Point, shape
 from shapely.geometry.polygon import Polygon
-from shapely.geometry.multipolygon import MultiPolygon
 
-with open("/opt/airflow/dags/dag_schema_data_gouv_fr/utils/france_bbox.geojson") as f:
+with open('/opt/airflow/dags/dag_schema_data_gouv_fr/utils/france_bbox.geojson') as f:
     FRANCE_BBOXES = geojson.load(f)
 
 def is_point_in_polygon(x: float, y: float, polygon: List[List[float]]) -> bool:
@@ -21,14 +20,14 @@ def is_point_in_france(coordonnees_xy: List[float]) -> bool:
     p = Point(*coordonnees_xy)
     
     # Create a Polygon
-    geoms = [region["geometry"] for region in FRANCE_BBOXES.get('features')]
+    geoms = [region['geometry'] for region in FRANCE_BBOXES.get('features')]
     polys = [shape(geom) for geom in geoms]
     return any([p.within(poly) for poly in polys])
 
 
-def fix_coordinates_order(filepath: List[str], coordinates_column: str="coordonneesXY") -> None:
+def fix_coordinates_order(df: pd.DataFrame, coordinates_column: str='coordonneesXY') -> pd.DataFrame:
     """
-    Cette fonction modifie un fichier CSV pour placer la longitude avant la latitude
+    Cette fonction modifie une dataframe pour placer la longitude avant la latitude
     dans la colonne qui contient les deux au format "[lon, lat]".
     """
 
@@ -41,87 +40,142 @@ def fix_coordinates_order(filepath: List[str], coordinates_column: str="coordonn
             fix_coordinates.rows_modified = fix_coordinates.rows_modified + 1
         return row
 
-    for filepath in filepaths:
-        fix_coordinates.rows_modified = 0
-        source_df = pd.read_csv(filepath)
-        source_df.apply(fix_coordinates, axis=1).to_csv(filepath, index=False)
-        print(f"Rows modified: {fix_coordinates.rows_modified}/{len(source_df)}")
+    fix_coordinates.rows_modified = 0
+    df = df.apply(fix_coordinates, axis=1)
+    print(f'Coordinates reordered: {fix_coordinates.rows_modified}/{len(df)}')
+    return df
 
 
-def create_lon_lat_cols(filepaths: List[str], coordinates_column: str="coordonneesXY") -> None:
-    """Add longitude and latitude columns to CSV using coordinates_column"""
-    for filepath in filepaths:
-        df = pd.read_csv(filepath)
-        coordinates = df[coordinates_column].apply(json.loads)
-        df['longitude'] = coordinates.str[0]
-        df['latitude'] = coordinates.str[1]
-        df.to_csv(filepath)
+def create_lon_lat_cols(df: pd.DataFrame, coordinates_column: str='coordonneesXY') -> pd.DataFrame:
+    """Add longitude and latitude columns to dataframe using coordinates_column"""
+    coordinates = df[coordinates_column].apply(json.loads)
+    df['longitude'] = coordinates.str[0]
+    df['latitude'] = coordinates.str[1]
+    return df
 
 
-def export_to_geojson(filepaths: List[str], coordinates_column: str="coordonneesXY") -> None:
-    """Convert CSV into Geojson format"""
-    for filepath in filepaths:
-        df = pd.read_csv(filepath)
+def export_to_geojson(df: pd.DataFrame, target_filepath: str, coordinates_column: str='coordonneesXY') -> None:
+    """Export dataframe into Geojson format"""
+    json_result_string = df.to_json(
+        orient='records',
+        double_precision=12,
+        date_format='iso'
+    )
+    json_result = json.loads(json_result_string)
 
-        json_result_string = df.to_json(
-            orient='records',
-            double_precision=12,
-            date_format='iso'
-        )
-        json_result = json.loads(json_result_string)
-
-        geojson = {
-            'type': 'FeatureCollection',
-            'features': []
-        }
-        for record in json_result:
-            coordinates = json.loads(record[coordinates_column])
-            longitude, latitude = coordinates
-            geojson['features'].append({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [longitude, latitude],
-                },
-                'properties': record,
-            })
-        geojson_filepath = os.path.splitext(filepath)[0] + '.json'
-        with open(geojson_filepath, 'w') as f:
-            f.write(json.dumps(geojson, indent=2))
+    geojson = {
+        'type': 'FeatureCollection',
+        'features': []
+    }
+    for record in json_result:
+        coordinates = json.loads(record[coordinates_column])
+        longitude, latitude = coordinates
+        geojson['features'].append({
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [longitude, latitude],
+            },
+            'properties': record,
+        })
+    with open(target_filepath, 'w') as f:
+        f.write(json.dumps(geojson, indent=2))
 
 
-def fix_code_insee(filepaths: List[str], code_insee_col: str='code_insee_commune', address_col: str='adresse_station', lon_col: str='longitude', lat_col: str='latitude'):
+def fix_code_insee(df: pd.DataFrame, code_insee_col: str='code_insee_commune', address_col: str='adresse_station', lon_col: str='longitude', lat_col: str='latitude') -> pd.DataFrame:
     """Check code INSEE in CSV file and enrich with postcode and city
     Requires address and coordinates columns
     """
     def enrich_row_address(row: pd.Series) -> pd.Series:
-        # Try getting code INSEE from address (ordered by latitude and longitude)
-        address_url = f'https://api-adresse.data.gouv.fr/search/?q={row[address_col]}&lon={row[lon_col]}&lat={row[lat_col]}'
-        results = requests.get(url=address_url)
-        print(address_url)
-        all_addresses = json.loads(results.content)['features']
-        if len(all_addresses) > 0:
-            most_likely_address = all_addresses[0]['properties']
-            row[code_insee_col] = most_likely_address['citycode']
-            row['code_postal'] = most_likely_address['postcode']
-            row['ville'] = most_likely_address['city']
-        else:
-            # Try getting commune with code INSEE from latitude and longitude alone
-            commune_results = json.loads(requests.get(url=f'https://geo.api.gouv.fr/communes?lat={row[lat_col]}&lon={row[lon_col]}&fields=code,nom,codesPostaux').content)
-            print(commune_results)
-            if len(commune_results) > 0:
-                commune = commune_results[0]
+        row['is_lon_lat_correct'] = False
+        row['is_code_insee_checked'] = False
+        # Try getting commune with code INSEE from latitude and longitude alone
+        response = requests.get(url=f'https://geo.api.gouv.fr/communes?lat={row[lat_col]}&lon={row[lon_col]}&fields=code,nom,codesPostaux')
+        commune_results = json.loads(response.content)
+        if (response.status_code == requests.codes.ok) and (len(commune_results) > 0):
+            commune = commune_results[0]
+            if (row[code_insee_col] == commune['code']):
                 row[code_insee_col] = commune['code']
-                if len(commune['codesPostaux']) > 1:
-                    print(f'Attention: plusieurs code postaux pour {row}')
                 row['code_postal'] = commune['codesPostaux'][0]
-                row['ville'] = commune['nom']
+                row['commune'] = commune['nom']
+                row['is_lon_lat_correct'] = True
+                row['is_code_insee_checked'] = True
+                enrich_row_address.already_good += 1
+                return row
+            elif row[code_insee_col] in commune['codesPostaux']:
+                row['code_postal'] = row[code_insee_col]
+                row[code_insee_col] = commune['code']
+                row['commune'] = commune['nom']
+                row['is_lon_lat_correct'] = True
+                row['is_code_insee_checked'] = True
+                enrich_row_address.code_fixed += 1
+                return row
             else:
-                print(f'Attention: adresse non enrichie: {row}')
-                row['code_postal'] = ''
-                row['ville'] = ''
+                # Lat lon match a commune which does not match code INSEE
+                enrich_row_address.code_coords_mismatch += 1
+        else:
+            # Lat lon do not match any commune
+            enrich_row_address.no_match_coords += 1
+
+        if str(row[code_insee_col]) in row[address_col]:
+            # Code INSEE field actually contains a postcode
+            response = requests.get(url=f'https://geo.api.gouv.fr/communes?codePostal={row[code_insee_col]}&fields=code,nom')
+            commune_results = json.loads(response.content)
+            if (response.status_code == requests.codes.ok) and (len(commune_results) > 0):
+                commune = commune_results[0]
+                row['code_postal'] = row[code_insee_col]
+                row['commune'] = commune['nom']
+                row[code_insee_col] = commune['code']
+                row['is_code_insee_checked'] = True
+                enrich_row_address.code_insee_is_postcode_in_address += 1
+                return row
+
+        # Check if postcode is in address
+        response = requests.get(url=f'https://geo.api.gouv.fr/communes?code={row[code_insee_col]}&fields=codesPostaux,nom')
+        commune_results = json.loads(response.content)
+        if (response.status_code == requests.codes.ok) and (len(commune_results) > 0):
+            commune = commune_results[0]
+            for postcode in commune['codesPostaux']:
+                if postcode in row[address_col]:
+                    row['code_postal'] = postcode
+                    row['commune'] = commune['nom']
+                    row['is_code_insee_checked'] = True
+                    enrich_row_address.code_insee_has_postcode_in_address += 1
+                    return row
+
+        # None of the above checks succeeded. Code INSEE validity cannot be checked.
+        # Geo data is not enriched using code INSEE due to risk of introducing fake data
+        row['code_postal'] = ''
+        row['commune'] = ''
+        enrich_row_address.nothing_matches += 1
         return row
 
-    for filepath in filepaths:
-        pd.read_csv(filepath).apply(enrich_row_address, axis=1).to_csv(os.path.splitext(filepath)[0]+'_test.csv')
-    
+    enrich_row_address.already_good = 0
+    enrich_row_address.code_fixed = 0
+    enrich_row_address.code_coords_mismatch = 0
+    enrich_row_address.no_match_coords = 0
+    enrich_row_address.code_insee_is_postcode_in_address = 0
+    enrich_row_address.code_insee_has_postcode_in_address = 0
+    enrich_row_address.nothing_matches = 0
+
+    df = df.apply(enrich_row_address, axis=1)
+
+    total_rows = len(df)
+    print(f'Coords OK. INSEE codes already correct, simply enriched: {enrich_row_address.already_good}/{total_rows}')
+    print(f'Coords OK. INSEE code field contained postcode. Fixed and enriched: {enrich_row_address.code_fixed}/{len(df)}')
+    print(f'Coords not matching code INSEE field as code INSEE or postcode: {enrich_row_address.code_coords_mismatch}/{total_rows}')
+    print(f'Coords not matching any commune: {enrich_row_address.no_match_coords}/{total_rows}')
+    print(f'Code INSEE is postcode in address. Fixed and enriched: {enrich_row_address.code_insee_is_postcode_in_address}/{total_rows}')
+    print(f'Code INSEE has postcode in address. Enriched: {enrich_row_address.code_insee_has_postcode_in_address}/{total_rows}')
+    print(f'No indication of postcode/code INSEE in address or coordinates matching code INSEE field. No enriching performed: {enrich_row_address.nothing_matches}/{total_rows}')
+    return df
+
+
+def improve_geo_data_quality(file_cols_mapping: Dict[str, Dict[str, str]]) -> None:
+    for filepath, cols_dict in file_cols_mapping.items():
+        df = pd.read_csv(filepath)
+        df = fix_coordinates_order(df, coordinates_column=cols_dict['xy_coords'])
+        df = create_lon_lat_cols(df, coordinates_column=cols_dict['xy_coords'])
+        df = fix_code_insee(df, code_insee_col=cols_dict['code_insee'], address_col=cols_dict['adress'], lon_col=cols_dict['longitude'], lat_col=cols_dict['latitude'])
+        df.to_csv(filepath)
+        export_to_geojson(df, os.path.splitext(filepath)[0] + '.json', coordinates_column=cols_dict['xy_coords'])
