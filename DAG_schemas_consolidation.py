@@ -23,17 +23,17 @@ MINIO_BUCKET = Variable.get("minio_bucket_opendata")
 MINIO_USER = Variable.get("secret_minio_user_opendata")
 MINIO_PASSWORD = Variable.get("secret_minio_password_opendata")
 
-# MATTERMOST_ENDPOINT = Variable.get("secret_mattermost_schema_activite")
+MATTERMOST_ENDPOINT = Variable.get("secret_mattermost_schema_activite")
 
 SCHEMA_CATALOG = 'https://schema.data.gouv.fr/schemas/schemas.json'
 # SCHEMA_CATALOG = 'https://raw.githubusercontent.com/geoffreyaldebert/schema-test/master/schemas.json'
 
 API_KEY = Variable.get("secret_api_key_data_gouv")
-API_URL = "https://demo.data.gouv.fr/api/1/"
-# API_URL = "https://www.data.gouv.fr/api/1/"
+# API_URL = "https://demo.data.gouv.fr/api/1/"
+API_URL = "https://www.data.gouv.fr/api/1/"
 
 default_args = {
-   'email': ['sixte.de-maupeou@data.gouv.fr'],
+   'email': ['geoffrey.aldebert@data.gouv.fr'],
    'email_on_failure': True
 }
 
@@ -58,7 +58,7 @@ def notification_synthese(**kwargs):
     for s in schemas:
         if(s['schema_type'] == 'tableschema'):
             try:
-                filename = 'https://' + MINIO_URL + '/' + MINIO_BUCKET + '/datagouv_test/schemas_consolidation/' + \
+                filename = 'https://' + MINIO_URL + '/' + MINIO_BUCKET + '/datagouv/schemas_consolidation/' + \
                     last_conso + \
                     '/output/ref_tables/' + \
                     'ref_table_' + s['name'].replace('/','_') + '.csv'
@@ -77,7 +77,7 @@ def notification_synthese(**kwargs):
                 df.to_csv(TMP_FOLDER + DAG_FOLDER + 'liste_erreurs-'+s['name'].replace('/','_') + '.csv')
                 client.fput_object(
                     "opendata", \
-                    "datagouv_test/schemas_consolidation/" + last_conso + "/liste_erreurs/" + \
+                    "datagouv/schemas_consolidation/" + last_conso + "/liste_erreurs/" + \
                     'liste_erreurs-'+s['name'].replace('/','_') + '.csv', \
                     TMP_FOLDER + DAG_FOLDER + 'liste_erreurs-'+s['name'].replace('/','_') + '.csv'
                 )
@@ -87,7 +87,7 @@ def notification_synthese(**kwargs):
                 if(nb_suspectes != 0): message += '\n - Ressources suspectées : {}'.format(nb_suspectes)
                 
                 message += '\n - Ressources valides : {} \n - [Liste des ressources non valides]({})\n'.format(nb_valides, \
-                    'https://object.files.data.gouv.fr/opendata/datagouv_test/schemas_consolidation/' + last_conso + '/liste_erreurs/' + 'liste_erreurs-'+s['name'].replace('/','_') + '.csv' 
+                    'https://object.files.data.gouv.fr/opendata/datagouv/schemas_consolidation/' + last_conso + '/liste_erreurs/' + 'liste_erreurs-'+s['name'].replace('/','_') + '.csv' 
                 )
 
 
@@ -95,12 +95,12 @@ def notification_synthese(**kwargs):
                 print('No report for {}'.format(s['name']))
                 pass
 
-    # publish_mattermost = MattermostOperator(
-    #     task_id="publish_result",
-    #     mattermost_endpoint=MATTERMOST_ENDPOINT,
-    #     text=message
-    # )
-    # publish_mattermost.execute(dict())
+    publish_mattermost = MattermostOperator(
+        task_id="publish_result",
+        mattermost_endpoint=MATTERMOST_ENDPOINT,
+        text=message
+    )
+    publish_mattermost.execute(dict())
 
 with DAG(
     dag_id=DAG_NAME,
@@ -159,7 +159,7 @@ with DAG(
         minio_bucket=MINIO_BUCKET,
         minio_user=MINIO_USER,
         minio_password=MINIO_PASSWORD,
-        minio_output_filepath='datagouv_test/schemas_consolidation/' + '{{ ds }}' + "/",
+        minio_output_filepath='datagouv/schemas_consolidation/' + '{{ ds }}' + "/",
         parameters={
             **shared_notebooks_params,
             "OUTPUT_DATA_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/output/"
