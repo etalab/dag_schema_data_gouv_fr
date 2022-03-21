@@ -1,13 +1,17 @@
 from airflow.models import DAG, Variable
+from operators.papermill import PapermillOperator
 from operators.papermill_minio import PapermillMinioOperator
 from airflow.operators.python import PythonOperator
 from operators.clean_folder import CleanFolderOperator
 from operators.mattermost import MattermostOperator
 from airflow.utils.dates import days_ago
-from datetime import timedelta, datetime
+from datetime import timedelta
+import os
 import requests
 from minio import Minio
 import pandas as pd
+
+from dag_schema_data_gouv_fr.utils.geo import improve_geo_data_quality
 
 AIRFLOW_DAG_HOME='/opt/airflow/dags/'
 TMP_FOLDER='/tmp/'
@@ -32,6 +36,7 @@ default_args = {
    'email': ['geoffrey.aldebert@data.gouv.fr'],
    'email_on_failure': True
 }
+
 
 def notification_synthese(**kwargs):
     templates_dict = kwargs.get("templates_dict")
@@ -110,11 +115,45 @@ with DAG(
         task_id="clean_previous_outputs",
         folder_path=TMP_FOLDER + DAG_FOLDER
     )
+
+    tmp_folder = TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/"
+
+    shared_notebooks_params = {
+            "msgs": "Ran from Airflow " + '{{ ds }}' + "!",
+            "WORKING_DIR": AIRFLOW_DAG_HOME + DAG_FOLDER + 'notebooks/',
+            "TMP_FOLDER": tmp_folder,
+            "API_KEY": API_KEY,
+            "API_URL": API_URL,
+            "DATE_AIRFLOW": '{{ ds }}',
+            "SCHEMA_CATALOG": SCHEMA_CATALOG
+        }
     
-    run_nb_consolidation = PapermillMinioOperator(
+    run_nb_consolidation = PapermillOperator(
         task_id="run_notebook_schemas_consolidation",
-        input_nb=AIRFLOW_DAG_HOME + DAG_FOLDER + "notebooks/schemas_consolidation.ipynb",
-        output_nb='{{ ds }}' + ".ipynb",
+        input_nb=AIRFLOW_DAG_HOME + DAG_FOLDER + "notebooks/schemas_consolidation/schemas_consolidation.ipynb",
+        output_nb='{{ ds }}' + "_schemas_consolidation.ipynb",
+        parameters=shared_notebooks_params
+    )
+
+    schema_irve_path = os.path.join(tmp_folder, 'consolidated_data', 'etalab_schema-irve')
+    schema_irve_cols = {
+        'xy_coords': 'coordonneesXY',
+        'code_insee': 'code_insee_commune',
+        'adress': 'adresse_station',
+        'longitude': 'consolidated_longitude',
+        'latitude': 'consolidated_latitude'
+    }
+
+    geodata_quality_improvement = PythonOperator(
+        task_id="geodata_quality_improvement",
+        python_callable=lambda schema_path: improve_geo_data_quality({os.path.join(schema_path, filename): schema_irve_cols for filename in os.listdir(schema_path)}),
+        op_args=[schema_irve_path]
+    )
+
+    upload_consolidation = PapermillMinioOperator(
+        task_id="upload_consolidated_datasets",
+        input_nb=AIRFLOW_DAG_HOME + DAG_FOLDER + "notebooks/schemas_consolidation/consolidation_upload.ipynb",
+        output_nb='{{ ds }}' + "_consolidation_upload.ipynb",
         tmp_path=TMP_FOLDER+DAG_FOLDER + '{{ ds }}' + "/",
         minio_url=MINIO_URL,
         minio_bucket=MINIO_BUCKET,
@@ -122,19 +161,13 @@ with DAG(
         minio_password=MINIO_PASSWORD,
         minio_output_filepath='datagouv/schemas_consolidation/' + '{{ ds }}' + "/",
         parameters={
-            "msgs": "Ran from Airflow " + '{{ ds }}' + "!",
-            "WORKING_DIR": AIRFLOW_DAG_HOME + DAG_FOLDER + 'notebooks/',
-            "TMP_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/",
-            "OUTPUT_DATA_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/output/",
-            "API_KEY": API_KEY,
-            "API_URL": API_URL,
-            "DATE_AIRFLOW": '{{ ds }}',
-            "SCHEMA_CATALOG": SCHEMA_CATALOG
+            **shared_notebooks_params,
+            "OUTPUT_DATA_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/output/"
         }
     )
 
     notification_synthese = PythonOperator(
-        task_id="notification_synthese", 
+        task_id="notification_synthese",
         python_callable=notification_synthese,
         templates_dict={
             "TODAY": '{{ ds }}'
@@ -143,4 +176,4 @@ with DAG(
     
 
     
-    clean_previous_outputs >> run_nb_consolidation >> notification_synthese
+    clean_previous_outputs >> run_nb_consolidation >> geodata_quality_improvement >> upload_consolidation >> notification_synthese
