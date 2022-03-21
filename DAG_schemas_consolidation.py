@@ -140,8 +140,8 @@ with DAG(
         'xy_coords': 'coordonneesXY',
         'code_insee': 'code_insee_commune',
         'adress': 'adresse_station',
-        'longitude': 'longitude',
-        'latitude': 'latitude'
+        'longitude': 'consolidated_longitude',
+        'latitude': 'consolidated_latitude'
     }
 
     geodata_quality_improvement = PythonOperator(

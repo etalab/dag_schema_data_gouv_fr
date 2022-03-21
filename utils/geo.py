@@ -34,9 +34,11 @@ def fix_coordinates_order(df: pd.DataFrame, coordinates_column: str='coordonnees
     def fix_coordinates(row: pd.Series) -> pd.Series:
         coordonnees_xy = json.loads(row[coordinates_column])
         reversed_coordonnees = list(reversed(coordonnees_xy))
+        row['consolidated_coordinates_reordered'] = False
         if is_point_in_france(reversed_coordonnees):
             # Coordinates are inverted with lat before lon
             row[coordinates_column] = json.dumps(reversed_coordonnees)
+            row['consolidated_coordinates_reordered'] = True
             fix_coordinates.rows_modified = fix_coordinates.rows_modified + 1
         return row
 
@@ -49,8 +51,8 @@ def fix_coordinates_order(df: pd.DataFrame, coordinates_column: str='coordonnees
 def create_lon_lat_cols(df: pd.DataFrame, coordinates_column: str='coordonneesXY') -> pd.DataFrame:
     """Add longitude and latitude columns to dataframe using coordinates_column"""
     coordinates = df[coordinates_column].apply(json.loads)
-    df['longitude'] = coordinates.str[0]
-    df['latitude'] = coordinates.str[1]
+    df['consolidated_longitude'] = coordinates.str[0]
+    df['consolidated_latitude'] = coordinates.str[1]
     return df
 
 
@@ -82,32 +84,34 @@ def export_to_geojson(df: pd.DataFrame, target_filepath: str, coordinates_column
         f.write(json.dumps(geojson, indent=2))
 
 
-def fix_code_insee(df: pd.DataFrame, code_insee_col: str='code_insee_commune', address_col: str='adresse_station', lon_col: str='longitude', lat_col: str='latitude') -> pd.DataFrame:
+def fix_code_insee(df: pd.DataFrame, code_insee_col: str='code_insee_commune', address_col: str='adresse_station', lon_col: str='consolidated_longitude', lat_col: str='consolidated_latitude') -> pd.DataFrame:
     """Check code INSEE in CSV file and enrich with postcode and city
     Requires address and coordinates columns
     """
     def enrich_row_address(row: pd.Series) -> pd.Series:
-        row['is_lon_lat_correct'] = False
-        row['is_code_insee_checked'] = False
+        row['consolidated_is_lon_lat_correct'] = False
+        row['consolidated_is_code_insee_verified'] = False
+        row['consolidated_code_insee_modified'] = False
         # Try getting commune with code INSEE from latitude and longitude alone
         response = requests.get(url=f'https://geo.api.gouv.fr/communes?lat={row[lat_col]}&lon={row[lon_col]}&fields=code,nom,codesPostaux')
         commune_results = json.loads(response.content)
         if (response.status_code == requests.codes.ok) and (len(commune_results) > 0):
             commune = commune_results[0]
             if (row[code_insee_col] == commune['code']):
-                row[code_insee_col] = commune['code']
-                row['code_postal'] = commune['codesPostaux'][0]
-                row['commune'] = commune['nom']
-                row['is_lon_lat_correct'] = True
-                row['is_code_insee_checked'] = True
+                if len(commune['codesPostaux']) == 1:
+                    row['consolidated_code_postal'] = commune['codesPostaux'][0]
+                row['consolidated_commune'] = commune['nom']
+                row['consolidated_is_lon_lat_correct'] = True
+                row['consolidated_is_code_insee_verified'] = True
                 enrich_row_address.already_good += 1
                 return row
             elif row[code_insee_col] in commune['codesPostaux']:
-                row['code_postal'] = row[code_insee_col]
+                row['consolidated_code_postal'] = row[code_insee_col]
+                row['consolidated_code_insee_modified'] = True
                 row[code_insee_col] = commune['code']
-                row['commune'] = commune['nom']
-                row['is_lon_lat_correct'] = True
-                row['is_code_insee_checked'] = True
+                row['consolidated_commune'] = commune['nom']
+                row['consolidated_is_lon_lat_correct'] = True
+                row['consolidated_is_code_insee_verified'] = True
                 enrich_row_address.code_fixed += 1
                 return row
             else:
@@ -123,10 +127,11 @@ def fix_code_insee(df: pd.DataFrame, code_insee_col: str='code_insee_commune', a
             commune_results = json.loads(response.content)
             if (response.status_code == requests.codes.ok) and (len(commune_results) > 0):
                 commune = commune_results[0]
-                row['code_postal'] = row[code_insee_col]
-                row['commune'] = commune['nom']
+                row['consolidated_code_postal'] = row[code_insee_col]
+                row['consolidated_commune'] = commune['nom']
                 row[code_insee_col] = commune['code']
-                row['is_code_insee_checked'] = True
+                row['consolidated_code_insee_modified'] = True
+                row['consolidated_is_code_insee_verified'] = True
                 enrich_row_address.code_insee_is_postcode_in_address += 1
                 return row
 
@@ -137,16 +142,16 @@ def fix_code_insee(df: pd.DataFrame, code_insee_col: str='code_insee_commune', a
             commune = commune_results[0]
             for postcode in commune['codesPostaux']:
                 if postcode in row[address_col]:
-                    row['code_postal'] = postcode
-                    row['commune'] = commune['nom']
-                    row['is_code_insee_checked'] = True
+                    row['consolidated_code_postal'] = postcode
+                    row['consolidated_commune'] = commune['nom']
+                    row['consolidated_is_code_insee_verified'] = True
                     enrich_row_address.code_insee_has_postcode_in_address += 1
                     return row
 
         # None of the above checks succeeded. Code INSEE validity cannot be checked.
         # Geo data is not enriched using code INSEE due to risk of introducing fake data
-        row['code_postal'] = ''
-        row['commune'] = ''
+        row['consolidated_code_postal'] = ''
+        row['consolidated_commune'] = ''
         enrich_row_address.nothing_matches += 1
         return row
 
