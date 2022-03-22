@@ -179,8 +179,11 @@ def fix_code_insee(df: pd.DataFrame, code_insee_col: str='code_insee_commune', a
 def improve_geo_data_quality(file_cols_mapping: Dict[str, Dict[str, str]]) -> None:
     for filepath, cols_dict in file_cols_mapping.items():
         df = pd.read_csv(filepath)
+        schema_cols = list(df.columns)
         df = fix_coordinates_order(df, coordinates_column=cols_dict['xy_coords'])
         df = create_lon_lat_cols(df, coordinates_column=cols_dict['xy_coords'])
         df = fix_code_insee(df, code_insee_col=cols_dict['code_insee'], address_col=cols_dict['adress'], lon_col=cols_dict['longitude'], lat_col=cols_dict['latitude'])
+        new_cols = ['consolidated_longitude', 'consolidated_latitude', 'consolidated_code_postal', 'consolidated_commune', 'consolidated_is_lon_lat_correct', 'consolidated_is_code_insee_verified']
+        df = df[schema_cols+new_cols]
         df.to_csv(filepath)
         export_to_geojson(df, os.path.splitext(filepath)[0] + '.json', coordinates_column=cols_dict['xy_coords'])
