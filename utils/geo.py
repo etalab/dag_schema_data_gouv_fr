@@ -185,5 +185,5 @@ def improve_geo_data_quality(file_cols_mapping: Dict[str, Dict[str, str]]) -> No
         df = fix_code_insee(df, code_insee_col=cols_dict['code_insee'], address_col=cols_dict['adress'], lon_col=cols_dict['longitude'], lat_col=cols_dict['latitude'])
         new_cols = ['consolidated_longitude', 'consolidated_latitude', 'consolidated_code_postal', 'consolidated_commune', 'consolidated_is_lon_lat_correct', 'consolidated_is_code_insee_verified']
         df = df[schema_cols+new_cols]
-        df.to_csv(filepath)
+        df.to_csv(filepath, index=False)
         export_to_geojson(df, os.path.splitext(filepath)[0] + '.json', coordinates_column=cols_dict['xy_coords'])
