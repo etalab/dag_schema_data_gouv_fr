@@ -74,7 +74,11 @@ etalab/schema-stationnement-cyclable:
   publication: false
 etalab/schema-vehicules-faibles-emissions-renouvellement-parc:
   consolidate: true
-  publication: false
+  consolidated_dataset_id: 623e08af086bba04517431a3
+  documentation_resource_id: 4b3c46ee-2778-4410-ac08-8cd4c606d800
+  latest_resource_ids:
+    0.1.1: 63bca9ee-3bb4-4120-9a4f-49fd5d464f54
+  publication: true
 openmaraude/schema-stationstaxi:
   consolidate: true
   publication: false
