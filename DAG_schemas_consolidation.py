@@ -104,8 +104,8 @@ def notification_synthese(**kwargs):
 
 with DAG(
     dag_id=DAG_NAME,
-    schedule_interval='0 6 * * TUE',
-    start_date=days_ago(10),
+    schedule_interval='0 5 * * *',
+    start_date=days_ago(1),
     dagrun_timeout=timedelta(minutes=60),
     tags=['schemas','irve','consolidation','datagouv'],
     default_args=default_args,
@@ -128,10 +128,16 @@ with DAG(
             "SCHEMA_CATALOG": SCHEMA_CATALOG
         }
     
-    run_nb_consolidation = PapermillOperator(
+    run_nb_consolidation = PapermillMinioOperator(
         task_id="run_notebook_schemas_consolidation",
         input_nb=AIRFLOW_DAG_HOME + DAG_FOLDER + "notebooks/schemas_consolidation/schemas_consolidation.ipynb",
         output_nb='{{ ds }}' + "_schemas_consolidation.ipynb",
+        tmp_path=TMP_FOLDER+DAG_FOLDER + '{{ ds }}' + "/",
+        minio_url=MINIO_URL,
+        minio_bucket=MINIO_BUCKET,
+        minio_user=MINIO_USER,
+        minio_password=MINIO_PASSWORD,
+        minio_output_filepath='datagouv/schemas_consolidation/' + '{{ ds }}' + "/",        
         parameters=shared_notebooks_params
     )
 
