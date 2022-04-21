@@ -178,7 +178,7 @@ def fix_code_insee(df: pd.DataFrame, code_insee_col: str='code_insee_commune', a
 
 def improve_geo_data_quality(file_cols_mapping: Dict[str, Dict[str, str]]) -> None:
     for filepath, cols_dict in file_cols_mapping.items():
-        df = pd.read_csv(filepath)
+        df = pd.read_csv(filepath, dtype='str')
         schema_cols = list(df.columns)
         df = fix_coordinates_order(df, coordinates_column=cols_dict['xy_coords'])
         df = create_lon_lat_cols(df, coordinates_column=cols_dict['xy_coords'])
