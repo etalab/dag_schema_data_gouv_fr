@@ -32,6 +32,10 @@ etalab/schema-comptage-mobilites-site:
 etalab/schema-decp-dpa:
   consolidate: true
   publication: false
+etalab/schema-dispositif-aide:
+  consolidate: false
+  search_words:
+  - Dispositifs d'aides
 etalab/schema-hautes-remunerations:
   consolidate: true
   publication: false
