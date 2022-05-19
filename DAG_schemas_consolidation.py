@@ -1,9 +1,8 @@
 from airflow.models import DAG, Variable
-from operators.papermill import PapermillOperator
-from operators.papermill_minio import PapermillMinioOperator
 from airflow.operators.python import PythonOperator
 from operators.clean_folder import CleanFolderOperator
 from operators.mattermost import MattermostOperator
+from operators.python_minio import PythonMinioOperator
 from airflow.utils.dates import days_ago
 from datetime import timedelta
 import os
@@ -12,6 +11,8 @@ from minio import Minio
 import pandas as pd
 
 from dag_schema_data_gouv_fr.utils.geo import improve_geo_data_quality
+from dag_schema_data_gouv_fr.notebooks.schemas_consolidation.schemas_consolidation import run_schemas_consolidation
+from dag_schema_data_gouv_fr.notebooks.schemas_consolidation.consolidation_upload import run_consolidation_upload
 
 AIRFLOW_DAG_HOME='/opt/airflow/dags/'
 TMP_FOLDER='/tmp/'
@@ -106,7 +107,7 @@ with DAG(
     dag_id=DAG_NAME,
     schedule_interval='0 5 * * *',
     start_date=days_ago(1),
-    dagrun_timeout=timedelta(minutes=60),
+    dagrun_timeout=timedelta(minutes=120),
     tags=['schemas','irve','consolidation','datagouv'],
     default_args=default_args,
 ) as dag:
@@ -127,21 +128,22 @@ with DAG(
             "DATE_AIRFLOW": '{{ ds }}',
             "SCHEMA_CATALOG": SCHEMA_CATALOG
         }
-    
-    run_nb_consolidation = PapermillMinioOperator(
+
+    working_dir = AIRFLOW_DAG_HOME + DAG_FOLDER + 'notebooks/'
+    date_airflow = '{{ ds }}'
+
+    run_consolidation = PythonOperator(
         task_id="run_notebook_schemas_consolidation",
-        input_nb=AIRFLOW_DAG_HOME + DAG_FOLDER + "notebooks/schemas_consolidation/schemas_consolidation.ipynb",
-        output_nb='{{ ds }}' + "_schemas_consolidation.ipynb",
-        tmp_path=TMP_FOLDER+DAG_FOLDER + '{{ ds }}' + "/",
-        minio_url=MINIO_URL,
-        minio_bucket=MINIO_BUCKET,
-        minio_user=MINIO_USER,
-        minio_password=MINIO_PASSWORD,
-        minio_output_filepath='datagouv/schemas_consolidation/' + '{{ ds }}' + "/",        
-        parameters=shared_notebooks_params
+        python_callable=run_schemas_consolidation,
+        op_args=(API_URL, working_dir, tmp_folder, date_airflow, SCHEMA_CATALOG)
     )
 
     schema_irve_path = os.path.join(tmp_folder, 'consolidated_data', 'etalab_schema-irve')
+    if os.path.exists(schema_irve_path):
+        schema_paths_for_geo_quality_improvement = [schema_irve_path]
+    else:
+        print('Schema IRVE path not found. Geo data quality improvement will be skipped')
+        schema_paths_for_geo_quality_improvement = [None]
     schema_irve_cols = {
         'xy_coords': 'coordonneesXY',
         'code_insee': 'code_insee_commune',
@@ -152,24 +154,21 @@ with DAG(
 
     geodata_quality_improvement = PythonOperator(
         task_id="geodata_quality_improvement",
-        python_callable=lambda schema_path: improve_geo_data_quality({os.path.join(schema_path, filename): schema_irve_cols for filename in os.listdir(schema_path)}),
-        op_args=[schema_irve_path]
+        python_callable=lambda schema_path: improve_geo_data_quality({os.path.join(schema_path, filename): schema_irve_cols for filename in os.listdir(schema_path)}) if schema_path is not None else None,
+        op_args=schema_paths_for_geo_quality_improvement
     )
 
-    upload_consolidation = PapermillMinioOperator(
+    output_data_folder = TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/output/"
+    upload_consolidation = PythonMinioOperator(
         task_id="upload_consolidated_datasets",
-        input_nb=AIRFLOW_DAG_HOME + DAG_FOLDER + "notebooks/schemas_consolidation/consolidation_upload.ipynb",
-        output_nb='{{ ds }}' + "_consolidation_upload.ipynb",
-        tmp_path=TMP_FOLDER+DAG_FOLDER + '{{ ds }}' + "/",
+        tmp_path=tmp_folder,
         minio_url=MINIO_URL,
         minio_bucket=MINIO_BUCKET,
         minio_user=MINIO_USER,
         minio_password=MINIO_PASSWORD,
-        minio_output_filepath='datagouv/schemas_consolidation/' + '{{ ds }}' + "/",
-        parameters={
-            **shared_notebooks_params,
-            "OUTPUT_DATA_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/output/"
-        }
+        minio_output_filepath='datagouv_test/schemas_consolidation/' + '{{ ds }}' + "/",
+        python_callable=run_consolidation_upload,
+        op_args=(API_URL, API_KEY, tmp_folder, working_dir, date_airflow, SCHEMA_CATALOG, output_data_folder)
     )
 
     notification_synthese = PythonOperator(
@@ -182,4 +181,4 @@ with DAG(
     
 
     
-    clean_previous_outputs >> run_nb_consolidation >> geodata_quality_improvement >> upload_consolidation >> notification_synthese
+    clean_previous_outputs >> run_consolidation >> geodata_quality_improvement >> upload_consolidation >> notification_synthese
