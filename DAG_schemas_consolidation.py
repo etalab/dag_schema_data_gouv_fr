@@ -139,11 +139,6 @@ with DAG(
     )
 
     schema_irve_path = os.path.join(tmp_folder, 'consolidated_data', 'etalab_schema-irve')
-    if os.path.exists(schema_irve_path):
-        schema_paths_for_geo_quality_improvement = [schema_irve_path]
-    else:
-        print('Schema IRVE path not found. Geo data quality improvement will be skipped')
-        schema_paths_for_geo_quality_improvement = [None]
     schema_irve_cols = {
         'xy_coords': 'coordonneesXY',
         'code_insee': 'code_insee_commune',
@@ -155,7 +150,7 @@ with DAG(
     geodata_quality_improvement = PythonOperator(
         task_id="geodata_quality_improvement",
         python_callable=lambda schema_path: improve_geo_data_quality({os.path.join(schema_path, filename): schema_irve_cols for filename in os.listdir(schema_path)}) if schema_path is not None else None,
-        op_args=schema_paths_for_geo_quality_improvement
+        op_args=[schema_irve_path]
     )
 
     output_data_folder = TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/output/"
