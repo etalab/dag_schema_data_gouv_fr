@@ -745,48 +745,51 @@ def run_schemas_consolidation(
                                 if encoding == "Windows-1254":
                                     encoding = "iso-8859-1"
 
-                            df_r = pd.read_csv(
-                                file_path,
-                                sep=None,
-                                engine="python",
-                                dtype="str",
-                                encoding=encoding,
-                                na_filter=False,
-                            )
+                            try:
+                                df_r = pd.read_csv(
+                                    file_path,
+                                    sep=None,
+                                    engine="python",
+                                    dtype="str",
+                                    encoding=encoding,
+                                    na_filter=False,
+                                )
 
-                            if len(df_r) > 0:  # Keeping only non empty files
-                                # Keep only schema columns (and add empty columns for missing ones)
-                                df_r = df_r[
-                                    [
-                                        col
-                                        for col in version_cols_list
-                                        if col in df_r.columns
+                                if len(df_r) > 0:  # Keeping only non empty files
+                                    # Keep only schema columns (and add empty columns for missing ones)
+                                    df_r = df_r[
+                                        [
+                                            col
+                                            for col in version_cols_list
+                                            if col in df_r.columns
+                                        ]
                                     ]
-                                ]
-                                for col in version_cols_list:
-                                    if col not in df_r.columns:
-                                        df_r[col] = np.nan
+                                    for col in version_cols_list:
+                                        if col not in df_r.columns:
+                                            df_r[col] = np.nan
 
-                                df_r["last_modified"] = row[
-                                    "resource_last_modified"
-                                ]
-                                df_r["datagouv_dataset_id"] = row["dataset_id"]
-                                df_r["datagouv_resource_id"] = row[
-                                    "resource_id"
-                                ]
-                                df_r["datagouv_organization_or_owner"] = row[
-                                    "organization_or_owner"
-                                ]
-                                df_r_list += [df_r]
+                                    df_r["last_modified"] = row[
+                                        "resource_last_modified"
+                                    ]
+                                    df_r["datagouv_dataset_id"] = row["dataset_id"]
+                                    df_r["datagouv_resource_id"] = row[
+                                        "resource_id"
+                                    ]
+                                    df_r["datagouv_organization_or_owner"] = row[
+                                        "organization_or_owner"
+                                    ]
+                                    df_r_list += [df_r]
 
-                            else:
-                                df_ref.loc[
-                                    (
-                                        df_ref["resource_id"]
-                                        == row["resource_id"]
-                                    ),
-                                    "is_empty",
-                                ] = True
+                                else:
+                                    df_ref.loc[
+                                        (
+                                            df_ref["resource_id"]
+                                            == row["resource_id"]
+                                        ),
+                                        "is_empty",
+                                    ] = True
+                            except:
+                                print('Pb on reading resource - {}'.format(file_path))
 
                         if (
                             len(df_r_list)
