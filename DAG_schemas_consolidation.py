@@ -19,17 +19,17 @@ TMP_FOLDER='/tmp/'
 DAG_FOLDER = 'dag_schema_data_gouv_fr/'
 DAG_NAME = 'schemas_consolidation'
 
-MINIO_URL = Variable.get("minio_url")
-MINIO_BUCKET = Variable.get("minio_bucket_opendata")
-MINIO_USER = Variable.get("secret_minio_user_opendata")
-MINIO_PASSWORD = Variable.get("secret_minio_password_opendata")
+MINIO_URL = Variable.get("MINIO_URL")
+MINIO_BUCKET = Variable.get("MINIO_BUCKET_OPENDATA")
+MINIO_USER = Variable.get("SECRET_MINIO_USER_OPENDATA")
+MINIO_PASSWORD = Variable.get("SECRET_MINIO_PASSWORD_OPENDATA")
 
-MATTERMOST_ENDPOINT = Variable.get("secret_mattermost_schema_activite")
+MATTERMOST_ENDPOINT = Variable.get("MATTERMOST_DATAGOUV_SCHEMA_ACTIVITE")
 
 SCHEMA_CATALOG = 'https://schema.data.gouv.fr/schemas/schemas.json'
 # SCHEMA_CATALOG = 'https://raw.githubusercontent.com/geoffreyaldebert/schema-test/master/schemas.json'
 
-API_KEY = Variable.get("secret_api_key_data_gouv")
+API_KEY = Variable.get("DATAGOUV_SECRET_API_KEY")
 # API_URL = "https://demo.data.gouv.fr/api/1/"
 API_URL = "https://www.data.gouv.fr/api/1/"
 
