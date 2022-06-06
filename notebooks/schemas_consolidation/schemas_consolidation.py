@@ -113,7 +113,7 @@ def parse_api_search(url: str, api_url: str) -> pd.DataFrame:
                     obj["resource_title"] = res["title"]
                     obj["resource_url"] = res["url"]
                     obj["resource_last_modified"] = res["last_modified"]
-                    if ext != "csv":
+                    if ext not in ["csv", "xls", "xlsx"]:
                         obj["error_type"] = "wrong-file-format"
                     else:
                         if (
@@ -159,7 +159,7 @@ def parse_api(url: str) -> pd.DataFrame:
                     obj["resource_title"] = res["title"]
                     obj["resource_url"] = res["url"]
                     obj["resource_last_modified"] = res["last_modified"]
-                    if ext != "csv":
+                    if ext not in ["csv", "xls", "xlsx"]:
                         obj["error_type"] = "wrong-file-format"
                     else:
                         if (
@@ -738,22 +738,30 @@ def run_schemas_consolidation(
                                 row["dataset_slug"],
                                 "{}.csv".format(row["resource_id"]),
                             )
-                            with open(file_path, "rb") as f:
-                                encoding = chardet.detect(f.read()).get(
-                                    "encoding"
-                                )
-                                if encoding == "Windows-1254":
-                                    encoding = "iso-8859-1"
 
                             try:
-                                df_r = pd.read_csv(
-                                    file_path,
-                                    sep=None,
-                                    engine="python",
-                                    dtype="str",
-                                    encoding=encoding,
-                                    na_filter=False,
-                                )
+                                if file_path.endswith('.csv'):
+                                    with open(file_path, "rb") as f:
+                                        encoding = chardet.detect(f.read()).get(
+                                            "encoding"
+                                        )
+                                    if encoding == "Windows-1254":
+                                        encoding = "iso-8859-1"
+
+                                    df_r = pd.read_csv(
+                                        file_path,
+                                        sep=None,
+                                        engine="python",
+                                        dtype="str",
+                                        encoding=encoding,
+                                        na_filter=False,
+                                    )
+                                else:
+                                    df_r = pd.read_excel(
+                                        file_path,
+                                        dtype="str",
+                                        na_filter=False
+                                    )
 
                                 if len(df_r) > 0:  # Keeping only non empty files
                                     # Keep only schema columns (and add empty columns for missing ones)
