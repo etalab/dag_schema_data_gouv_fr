@@ -10,10 +10,10 @@ TMP_FOLDER='/tmp/'
 DAG_FOLDER = 'dag_schema_data_gouv_fr/'
 DAG_NAME = 'schemas_recommendations'
 
-MINIO_URL = Variable.get("minio_url")
-MINIO_BUCKET = Variable.get("minio_bucket_opendata")
-MINIO_USER = Variable.get("secret_minio_user_opendata")
-MINIO_PASSWORD = Variable.get("secret_minio_password_opendata")
+MINIO_URL = Variable.get("MINIO_URL")
+MINIO_BUCKET = Variable.get("MINIO_BUCKET_OPENDATA")
+MINIO_USER = Variable.get("SECRET_MINIO_USER_OPENDATA")
+MINIO_PASSWORD = Variable.get("SECRET_MINIO_PASSWORD_OPENDATA")
 
 # GIT_REPO = 'git@github.com:etalab/schema.data.gouv.fr.git'
 GIT_REPO = 'git@github.com:etalab/schema.data.gouv.fr.git'
