@@ -161,7 +161,7 @@ with DAG(
         minio_bucket=MINIO_BUCKET,
         minio_user=MINIO_USER,
         minio_password=MINIO_PASSWORD,
-        minio_output_filepath='datagouv_test/schemas_consolidation/' + '{{ ds }}' + "/",
+        minio_output_filepath='datagouv/schemas_consolidation/' + '{{ ds }}' + "/",
         python_callable=run_consolidation_upload,
         op_args=(API_URL, API_KEY, tmp_folder, working_dir, date_airflow, SCHEMA_CATALOG, output_data_folder)
     )
