@@ -733,10 +733,11 @@ def run_schemas_consolidation(
                         df_r_list = []
 
                         for index, row in df_ref_v.iterrows():
+                            file_extension = os.path.splitext(row['resource_url'])[1]
                             file_path = os.path.join(
                                 schema_data_path,
                                 row["dataset_slug"],
-                                "{}.csv".format(row["resource_id"]),
+                                f"{row['resource_id']}{file_extension}",
                             )
 
                             try:
@@ -760,7 +761,8 @@ def run_schemas_consolidation(
                                     df_r = pd.read_excel(
                                         file_path,
                                         dtype="str",
-                                        na_filter=False
+                                        na_filter=False,
+                                        engine="openpyxl"
                                     )
 
                                 if len(df_r) > 0:  # Keeping only non empty files
