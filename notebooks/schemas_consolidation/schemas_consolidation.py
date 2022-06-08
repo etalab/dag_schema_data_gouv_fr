@@ -631,7 +631,8 @@ def run_schemas_consolidation(
                     if r.status_code == 200:
                         p = Path(schema_data_path) / row["dataset_slug"]
                         p.mkdir(exist_ok=True)
-                        written_filename = "{}.csv".format(row["resource_id"])
+                        file_extension = os.path.splitext(row['resource_url'])[1]
+                        written_filename = f"{row['resource_id']}{file_extension}"
 
                         with open(
                             "{}/{}".format(p, written_filename), "wb"
