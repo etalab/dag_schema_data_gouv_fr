@@ -113,7 +113,7 @@ def parse_api_search(url: str, api_url: str) -> pd.DataFrame:
                     obj["resource_title"] = res["title"]
                     obj["resource_url"] = res["url"]
                     obj["resource_last_modified"] = res["last_modified"]
-                    if ext != "csv":
+                    if ext not in ["csv", "xls", "xlsx"]:
                         obj["error_type"] = "wrong-file-format"
                     else:
                         if (
@@ -159,7 +159,7 @@ def parse_api(url: str) -> pd.DataFrame:
                     obj["resource_title"] = res["title"]
                     obj["resource_url"] = res["url"]
                     obj["resource_last_modified"] = res["last_modified"]
-                    if ext != "csv":
+                    if ext not in ["csv", "xls", "xlsx"]:
                         obj["error_type"] = "wrong-file-format"
                     else:
                         if (
@@ -631,7 +631,8 @@ def run_schemas_consolidation(
                     if r.status_code == 200:
                         p = Path(schema_data_path) / row["dataset_slug"]
                         p.mkdir(exist_ok=True)
-                        written_filename = "{}.csv".format(row["resource_id"])
+                        file_extension = os.path.splitext(row['resource_url'])[1]
+                        written_filename = f"{row['resource_id']}{file_extension}"
 
                         with open(
                             "{}/{}".format(p, written_filename), "wb"
@@ -733,27 +734,37 @@ def run_schemas_consolidation(
                         df_r_list = []
 
                         for index, row in df_ref_v.iterrows():
+                            file_extension = os.path.splitext(row['resource_url'])[1]
                             file_path = os.path.join(
                                 schema_data_path,
                                 row["dataset_slug"],
-                                "{}.csv".format(row["resource_id"]),
+                                f"{row['resource_id']}{file_extension}",
                             )
-                            with open(file_path, "rb") as f:
-                                encoding = chardet.detect(f.read()).get(
-                                    "encoding"
-                                )
-                                if encoding == "Windows-1254":
-                                    encoding = "iso-8859-1"
 
                             try:
-                                df_r = pd.read_csv(
-                                    file_path,
-                                    sep=None,
-                                    engine="python",
-                                    dtype="str",
-                                    encoding=encoding,
-                                    na_filter=False,
-                                )
+                                if file_path.endswith('.csv'):
+                                    with open(file_path, "rb") as f:
+                                        encoding = chardet.detect(f.read()).get(
+                                            "encoding"
+                                        )
+                                    if encoding == "Windows-1254":
+                                        encoding = "iso-8859-1"
+
+                                    df_r = pd.read_csv(
+                                        file_path,
+                                        sep=None,
+                                        engine="python",
+                                        dtype="str",
+                                        encoding=encoding,
+                                        na_filter=False,
+                                    )
+                                else:
+                                    df_r = pd.read_excel(
+                                        file_path,
+                                        dtype="str",
+                                        na_filter=False,
+                                        engine="openpyxl"
+                                    )
 
                                 if len(df_r) > 0:  # Keeping only non empty files
                                     # Keep only schema columns (and add empty columns for missing ones)
