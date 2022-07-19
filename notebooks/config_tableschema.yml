@@ -58,6 +58,7 @@ etalab/schema-irve:
   latest_resource_ids:
     2.0.2: 8d9398ae-3037-48b2-be19-412c24561fbb
   publication: true
+  geojson_resource_id: b8ccf6c6-5554-47cc-b694-947d33fd9c86
   search_words:
   - "Infrastructures de recharge pour v\xE9hicules \xE9lectriques"
   - IRVE
