@@ -491,11 +491,6 @@ def upload_geojson(
     headers = {
         "X-API-KEY": api_key,
     }
-    obj = {}
-    obj[
-        "title"
-    ] = "Export au format geojson"
-    obj["format"] = "csv"
 
     with open(config_path, "r") as f:
             config_dict = yaml.safe_load(f)
@@ -525,16 +520,31 @@ def upload_geojson(
 
     # Uploading file
     consolidated_dataset_id = config_dict[schema_name]["consolidated_dataset_id"]
-    r_id = config_dict[schema_name]["geojson_resource_id"]
-    url = (
-        api_url
-        + "datasets/"
-        + consolidated_dataset_id
-        + "/resources/"
-        + r_id
-        + "/upload/"
-    )
-    expected_status_code = 200
+    try:
+        r_id = config_dict[schema_name]["geojson_resource_id"]
+        url = (
+            api_url
+            + "datasets/"
+            + consolidated_dataset_id
+            + "/resources/"
+            + r_id
+            + "/upload/"
+        )
+        r_to_create = False
+        expected_status_code = 200
+    except KeyError:
+        url = (
+            api_url
+            + "datasets/"
+            + consolidated_dataset_id
+            + "/upload/"
+        )
+        r_to_create = True
+        expected_status_code = 201
+
+    print(url)
+    print(headers)
+    print(geojson_path)
 
     with open(geojson_path, "rb") as file:
         files = {
@@ -545,11 +555,28 @@ def upload_geojson(
 
     if response.status_code != expected_status_code:
         print(
-            "{} --- ⚠️: file could not be uploaded.".format(
+            "{} --- ⚠️: GeoJSON file could not be uploaded.".format(
                 datetime.today()
             )
         )
+        print(response.status_code)
+        print(response.reason)
+        print(response)
     else:
+        if r_to_create:
+            r_id = response.json()["id"]
+            update_config_file(schema_name, "geojson_resource_id", r_id, config_path)
+            print(
+                "{} --- ✅ Successfully created GeoJSON file.".format(
+                    datetime.today()
+                )
+            )
+
+        obj = {}
+        obj["type"] = "main"
+        obj["title"] = "Export au format geojson"
+        obj["format"] = "json"
+
         r_url = api_url + "datasets/{}/resources/{}/".format(
             consolidated_dataset_id, r_id
         )
@@ -559,7 +586,7 @@ def upload_geojson(
 
         if r_response.status_code == 200:
             print(
-                "{} --- ✅ Successfully updated GeoJSON file.".format(
+                "{} --- ✅ Successfully updated GeoJSON file with metadata.".format(
                     datetime.today()
                 )
             )
@@ -859,11 +886,6 @@ def run_consolidation_upload(
                     datetime.today(), schema_name
                 )
             )
-
-    # ### Updating IRVE GeoJSON file
-    upload_irve_geojson(
-        api_url, api_key, config_path, geojson_path
-    )
 
     # ### Updating resources schemas and sending comments/mails to notify producers
     # ⚠️⚠️⚠️ **TODO: UNCOMMENT MAIL SENDING AND DISCUSSION COMMENTING (+ DELETE PRINTS) FOR NOTIFICATION TO PRODUCERS.**
