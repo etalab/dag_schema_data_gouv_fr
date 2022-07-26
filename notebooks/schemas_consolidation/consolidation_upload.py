@@ -542,10 +542,6 @@ def upload_geojson(
         r_to_create = True
         expected_status_code = 201
 
-    print(url)
-    print(headers)
-    print(geojson_path)
-
     with open(geojson_path, "rb") as file:
         files = {
             "file": (geojson_path.split("/")[-1], file.read())
@@ -559,9 +555,6 @@ def upload_geojson(
                 datetime.today()
             )
         )
-        print(response.status_code)
-        print(response.reason)
-        print(response)
     else:
         if r_to_create:
             r_id = response.json()["id"]
@@ -641,7 +634,6 @@ def run_consolidation_upload(
         schemas_report_dict = pickle.load(f)
 
     consolidation_date_str = date_airflow.replace("-", "")
-    print(consolidation_date_str)
 
     schemas_list_url = schema_catalog
     schemas_catalogue_dict = requests.get(schemas_list_url).json()
