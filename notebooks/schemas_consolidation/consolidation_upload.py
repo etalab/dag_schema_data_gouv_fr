@@ -520,27 +520,16 @@ def upload_geojson(
 
     # Uploading file
     consolidated_dataset_id = config_dict[schema_name]["consolidated_dataset_id"]
-    try:
-        r_id = config_dict[schema_name]["geojson_resource_id"]
-        url = (
-            api_url
-            + "datasets/"
-            + consolidated_dataset_id
-            + "/resources/"
-            + r_id
-            + "/upload/"
-        )
-        r_to_create = False
-        expected_status_code = 200
-    except KeyError:
-        url = (
-            api_url
-            + "datasets/"
-            + consolidated_dataset_id
-            + "/upload/"
-        )
-        r_to_create = True
-        expected_status_code = 201
+    r_id = config_dict[schema_name]["geojson_resource_id"]
+    url = (
+        api_url
+        + "datasets/"
+        + consolidated_dataset_id
+        + "/resources/"
+        + r_id
+        + "/upload/"
+    )
+    expected_status_code = 200
 
     with open(geojson_path, "rb") as file:
         files = {
@@ -556,15 +545,6 @@ def upload_geojson(
             )
         )
     else:
-        if r_to_create:
-            r_id = response.json()["id"]
-            update_config_file(schema_name, "geojson_resource_id", r_id, config_path)
-            print(
-                "{} --- ✅ Successfully created GeoJSON file.".format(
-                    datetime.today()
-                )
-            )
-
         obj = {}
         obj["type"] = "main"
         obj["title"] = "Export au format geojson"
