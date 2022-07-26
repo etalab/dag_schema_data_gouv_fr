@@ -480,6 +480,97 @@ def add_validation_extras(
         return response.status_code == 200
 
 
+def upload_geojson(
+    api_url: str,
+    api_key: str,
+    config_path: str,
+    schema_consolidated_data_path: str,
+    consolidation_date_str: str,
+    schema_name: str,
+) -> bool:
+    headers = {
+        "X-API-KEY": api_key,
+    }
+
+    with open(config_path, "r") as f:
+            config_dict = yaml.safe_load(f)
+
+    geojson_version_names_list = sorted([
+        filename.replace(
+            "consolidation_"
+            + schema_name.replace("/", "_")
+            + "_v_",
+            "",
+        ).replace("_" + consolidation_date_str + ".json", "")
+        for filename in os.listdir(schema_consolidated_data_path)
+        if filename.endswith(".json")
+        and not filename.startswith(".")
+    ])
+    if len(geojson_version_names_list) > 1:
+        print("Warning: multiple versions of GeoJSON found for {}".format(schema_name))
+
+    geojson_path = os.path.join(
+        schema_consolidated_data_path,
+        "consolidation_{}_v_{}_{}.json".format(
+            schema_name.replace("/", "_"),
+            geojson_version_names_list[-1],
+            consolidation_date_str,
+        ),
+    )
+
+    # Uploading file
+    consolidated_dataset_id = config_dict[schema_name]["consolidated_dataset_id"]
+    r_id = config_dict[schema_name]["geojson_resource_id"]
+    url = (
+        api_url
+        + "datasets/"
+        + consolidated_dataset_id
+        + "/resources/"
+        + r_id
+        + "/upload/"
+    )
+    expected_status_code = 200
+
+    with open(geojson_path, "rb") as file:
+        files = {
+            "file": (geojson_path.split("/")[-1], file.read())
+        }
+
+    response = requests.post(url, files=files, headers=headers)
+
+    if response.status_code != expected_status_code:
+        print(
+            "{} --- ⚠️: GeoJSON file could not be uploaded.".format(
+                datetime.today()
+            )
+        )
+    else:
+        obj = {}
+        obj["type"] = "main"
+        obj["title"] = "Export au format geojson"
+        obj["format"] = "json"
+
+        r_url = api_url + "datasets/{}/resources/{}/".format(
+            consolidated_dataset_id, r_id
+        )
+        r_response = requests.put(
+            r_url, json=obj, headers=headers
+        )
+
+        if r_response.status_code == 200:
+            print(
+                "{} --- ✅ Successfully updated GeoJSON file with metadata.".format(
+                    datetime.today()
+                )
+            )
+        else:
+            print(
+                "{} --- ⚠️: file uploaded but metadata could not be updated.".format(
+                    datetime.today()
+                )
+            )
+
+
 def run_consolidation_upload(
     api_url: str,
     api_key: str,
@@ -523,7 +614,6 @@ def run_consolidation_upload(
         schemas_report_dict = pickle.load(f)
 
     consolidation_date_str = date_airflow.replace("-", "")
-    print(consolidation_date_str)
 
     schemas_list_url = schema_catalog
     schemas_catalogue_dict = requests.get(schemas_list_url).json()
@@ -704,6 +794,10 @@ def run_consolidation_upload(
                                     datetime.today(), version_name
                                 )
                             )
+
+                # Update IRVE GeoJSON file
+                if schema_name == "etalab/schema-irve":
+                    upload_geojson(api_url, api_key, config_path, schema_consolidated_data_path, consolidation_date_str, schema_name)
             else:
                 schemas_report_dict[schema_name][
                     "consolidated_dataset_id"
