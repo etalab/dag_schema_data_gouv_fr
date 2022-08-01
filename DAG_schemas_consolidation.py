@@ -1,18 +1,20 @@
 from airflow.models import DAG, Variable
 from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 from operators.clean_folder import CleanFolderOperator
 from operators.mattermost import MattermostOperator
 from operators.python_minio import PythonMinioOperator
 from airflow.utils.dates import days_ago
-from datetime import timedelta
+from datetime import timedelta, datetime
+
 import os
 import requests
 from minio import Minio
 import pandas as pd
 
 from dag_schema_data_gouv_fr.utils.geo import improve_geo_data_quality
-from dag_schema_data_gouv_fr.notebooks.schemas_consolidation.schemas_consolidation import run_schemas_consolidation
-from dag_schema_data_gouv_fr.notebooks.schemas_consolidation.consolidation_upload import run_consolidation_upload
+from dag_schema_data_gouv_fr.scripts.schemas_consolidation.schemas_consolidation import run_schemas_consolidation
+from dag_schema_data_gouv_fr.scripts.schemas_consolidation.consolidation_upload import run_consolidation_upload
 
 AIRFLOW_DAG_HOME='/opt/airflow/dags/'
 TMP_FOLDER='/tmp/'
@@ -32,6 +34,10 @@ SCHEMA_CATALOG = 'https://schema.data.gouv.fr/schemas/schemas.json'
 API_KEY = Variable.get("DATAGOUV_SECRET_API_KEY")
 # API_URL = "https://demo.data.gouv.fr/api/1/"
 API_URL = "https://www.data.gouv.fr/api/1/"
+
+GIT_REPO = 'git@github.com:etalab/dag_schema_data_gouv_fr.git'
+TMP_CLONE_REPO_PATH = TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/ "
+TMP_CONFIG_FILE = TMP_CLONE_REPO_PATH + 'dag_schema_data_gouv_fr/scripts/config_tableschema.yml'
 
 default_args = {
    'email': ['geoffrey.aldebert@data.gouv.fr'],
@@ -117,11 +123,17 @@ with DAG(
         folder_path=TMP_FOLDER + DAG_FOLDER
     )
 
+    clone_dag_schema_repo = BashOperator(
+        task_id='clone_dag_schema_repo',
+        bash_command='cd ' + TMP_CLONE_REPO_PATH + \
+            '&& git clone ' + GIT_REPO ,
+    )
+
     tmp_folder = TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/"
 
-    shared_notebooks_params = {
+    shared_params = {
             "msgs": "Ran from Airflow " + '{{ ds }}' + "!",
-            "WORKING_DIR": AIRFLOW_DAG_HOME + DAG_FOLDER + 'notebooks/',
+            "WORKING_DIR": AIRFLOW_DAG_HOME + DAG_FOLDER + 'scripts/',
             "TMP_FOLDER": tmp_folder,
             "API_KEY": API_KEY,
             "API_URL": API_URL,
@@ -129,13 +141,13 @@ with DAG(
             "SCHEMA_CATALOG": SCHEMA_CATALOG
         }
 
-    working_dir = AIRFLOW_DAG_HOME + DAG_FOLDER + 'notebooks/'
+    working_dir = AIRFLOW_DAG_HOME + DAG_FOLDER + 'scripts/'
     date_airflow = '{{ ds }}'
 
     run_consolidation = PythonOperator(
-        task_id="run_notebook_schemas_consolidation",
+        task_id="run_schemas_consolidation",
         python_callable=run_schemas_consolidation,
-        op_args=(API_URL, working_dir, tmp_folder, date_airflow, SCHEMA_CATALOG)
+        op_args=(API_URL, working_dir, tmp_folder, date_airflow, SCHEMA_CATALOG, TMP_CONFIG_FILE)
     )
 
     schema_irve_path = os.path.join(tmp_folder, 'consolidated_data', 'etalab_schema-irve')
@@ -166,6 +178,14 @@ with DAG(
         op_args=(API_URL, API_KEY, tmp_folder, working_dir, date_airflow, SCHEMA_CATALOG, output_data_folder)
     )
 
+    commit_changes = BashOperator(
+        task_id='commit_changes',
+        bash_command='cd ' + TMP_CLONE_REPO_PATH + "/dag_schema_data_gouv_fr" + \
+            ' && git add .' \
+            ' && git commit -m "Update config file - ' + datetime.today().strftime('%Y-%m-%d') + '" || echo "No changes to commit"' \
+            ' && git push origin master'
+    )
+
     notification_synthese = PythonOperator(
         task_id="notification_synthese",
         python_callable=notification_synthese,
@@ -174,6 +194,4 @@ with DAG(
         },
     )
     
-
-    
-    clean_previous_outputs >> run_consolidation >> geodata_quality_improvement >> upload_consolidation >> notification_synthese
+    clean_previous_outputs >> clone_dag_schema_repo >> run_consolidation >> geodata_quality_improvement >> upload_consolidation >> commit_changes >> notification_synthese
