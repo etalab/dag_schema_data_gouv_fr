@@ -314,10 +314,11 @@ def run_schemas_consolidation(
     tmp_folder: str,
     date_airflow: str,
     schema_catalog: str,
+    tmp_config_file: str,
 ) -> None:
     current_path = Path(working_dir)
     tmp_path = Path(tmp_folder)
-    config_path = os.path.join(current_path, "config_tableschema.yml")
+    config_path = Path(tmp_config_file)
     schemas_list_url = schema_catalog
     schema_url_base = api_url + "datasets/?schema={schema_name}"
     tag_url_base = api_url + "datasets/?tag={tag}"
