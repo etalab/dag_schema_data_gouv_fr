@@ -4,6 +4,10 @@ Archivistes75/registre_entrees:
 CEREMA/schema-arrete-circulation-marchandises:
   consolidate: true
   publication: false
+LaMednum/standard-mediation-num:
+  consolidate: false
+  search_words:
+  - "Lieux de m\xE9diation num\xE9rique"
 MTES-MCT/acceslibre-schema:
   consolidate: true
   publication: false
