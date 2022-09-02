@@ -16,6 +16,16 @@ import time
 
 VALIDATA_BASE_URL = "https://validata-api.app.etalab.studio/validate?schema={schema_url}&url={rurl}"
 
+def remove_old_schemas(config_dict, schemas_catalogue_list):
+    schemas_list = [schema['name'] for schema in schemas_catalogue_list]
+    mydict = {}
+    # Remove old schemas still in yaml
+    for schema_name in config_dict.keys():
+        if(schema_name in schemas_list):
+            mydict[schema_name] = config_dict[schema_name]
+        else:
+            print('{} - Remove old schema not anymore in catalog'.format(schema_name))
+    return mydict
 
 def get_schema_dict(
     schema_name: str, schemas_catalogue_list: List[dict]
@@ -60,7 +70,6 @@ def add_most_recent_valid_version(df_ref: pd.DataFrame) -> pd.DataFrame:
 def add_schema_default_config(
     schema_name: str, config_path: str, schemas_catalogue_list: List[dict]
 ) -> None:
-
     schema_dict = get_schema_dict(schema_name, schemas_catalogue_list)
     schema_title = schema_dict["title"]
 
@@ -74,6 +83,7 @@ def add_schema_default_config(
     if os.path.exists(config_path):
         with open(config_path, "r") as infile:
             config_dict = yaml.safe_load(infile)
+
     else:
         config_dict = {}
 
@@ -379,9 +389,10 @@ def run_schemas_consolidation(
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
             config_dict = yaml.safe_load(f)
+            config_dict = remove_old_schemas(config_dict, schemas_catalogue_list)
     else:
         config_dict = {}
-
+    
     for schema in schemas_catalogue_list:
         if schema["name"] not in config_dict.keys():
             add_schema_default_config(
@@ -407,6 +418,7 @@ def run_schemas_consolidation(
 
     with open(config_path, "r") as f:
         config_dict = yaml.safe_load(f)
+        config_dict = remove_old_schemas(config_dict, schemas_catalogue_list)
 
     # ## Building reference tables (parsing and listing resources + Validata check)
     for schema_name in config_dict.keys():

@@ -36,7 +36,7 @@ API_KEY = Variable.get("DATAGOUV_SECRET_API_KEY")
 API_URL = "https://www.data.gouv.fr/api/1/"
 
 GIT_REPO = 'git@github.com:etalab/dag_schema_data_gouv_fr.git'
-TMP_CLONE_REPO_PATH = TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/ "
+TMP_CLONE_REPO_PATH = TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/"
 TMP_CONFIG_FILE = TMP_CLONE_REPO_PATH + 'dag_schema_data_gouv_fr/scripts/config_tableschema.yml'
 
 default_args = {
@@ -113,14 +113,15 @@ with DAG(
     dag_id=DAG_NAME,
     schedule_interval='0 5 * * *',
     start_date=days_ago(1),
-    dagrun_timeout=timedelta(minutes=120),
+    dagrun_timeout=timedelta(minutes=240),
     tags=['schemas','irve','consolidation','datagouv'],
     default_args=default_args,
 ) as dag:
-    
-    clean_previous_outputs = CleanFolderOperator(
-        task_id="clean_previous_outputs",
-        folder_path=TMP_FOLDER + DAG_FOLDER
+ 
+    clean_previous_outputs = BashOperator(
+        task_id='clean_previous_outputs',
+        bash_command='rm -rf ' + TMP_FOLDER + DAG_FOLDER + \
+            ' && mkdir -p ' + TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/",
     )
 
     clone_dag_schema_repo = BashOperator(
@@ -175,7 +176,7 @@ with DAG(
         minio_password=MINIO_PASSWORD,
         minio_output_filepath='datagouv/schemas_consolidation/' + '{{ ds }}' + "/",
         python_callable=run_consolidation_upload,
-        op_args=(API_URL, API_KEY, tmp_folder, working_dir, date_airflow, SCHEMA_CATALOG, output_data_folder)
+        op_args=(API_URL, API_KEY, tmp_folder, working_dir, date_airflow, SCHEMA_CATALOG, output_data_folder, TMP_CONFIG_FILE)
     )
 
     commit_changes = BashOperator(

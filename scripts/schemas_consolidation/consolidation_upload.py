@@ -127,6 +127,17 @@ Une question ? Écrivez à validation@data.gouv.fr en incluant l'URL du jeu de d
 
 # Duplicated functions
 
+def remove_old_schemas(config_dict, schemas_catalogue_list):
+    schemas_list = [schema['name'] for schema in schemas_catalogue_list]
+    mydict = {}
+    # Remove old schemas still in yaml
+    for schema_name in config_dict.keys():
+        if(schema_name in schemas_list):
+            mydict[schema_name] = config_dict[schema_name]
+        else:
+            print('{} - Remove old schema not anymore in catalog'.format(schema_name))
+    return mydict
+
 
 def get_schema_dict(
     schema_name: str, schemas_catalogue_list: list
@@ -579,6 +590,7 @@ def run_consolidation_upload(
     date_airflow: str,
     schema_catalog: str,
     output_data_folder: str,
+    tmp_config_file: str,
 ) -> None:
     headers = {
         "X-API-KEY": api_key,
@@ -605,7 +617,7 @@ def run_consolidation_upload(
 
     current_path = Path(working_dir)
 
-    config_path = os.path.join(current_path, "config_tableschema.yml")
+    config_path = Path(tmp_config_file)
 
     with open(config_path, "r") as f:
         config_dict = yaml.safe_load(f)
@@ -623,11 +635,15 @@ def run_consolidation_upload(
         if schema["schema_type"] == "tableschema"
     ]
 
+    config_dict = remove_old_schemas(config_dict, schemas_catalogue_list)
+
     # ## Upload
     for schema_name in config_dict.keys():
 
         with open(config_path, "r") as f:
             config_dict = yaml.safe_load(f)
+        
+        config_dict = remove_old_schemas(config_dict, schemas_catalogue_list)
 
         print(
             "{} - ℹ️ STARTING SCHEMA: {}".format(datetime.now(), schema_name)
@@ -691,7 +707,9 @@ def run_consolidation_upload(
                 for version_name in sorted(version_names_list):
                     with open(config_path, "r") as f:
                         config_dict = yaml.safe_load(f)
+                        config_dict = remove_old_schemas(config_dict, schemas_catalogue_list)
 
+                    
                     schema = {"name": schema_name, "version": version_name}
                     obj = {}
                     obj["schema"] = schema
@@ -821,6 +839,7 @@ def run_consolidation_upload(
     # Reopening config file to update config_dict (in case it has to be reused right after)
     with open(config_path, "r") as f:
         config_dict = yaml.safe_load(f)
+        config_dict = remove_old_schemas(config_dict, schemas_catalogue_list)
 
     # ## Schemas (versions) feedback loop on resources
     # ### Adding needed infos for each resource in reference tables
@@ -1114,6 +1133,7 @@ def run_consolidation_upload(
 
         with open(config_path, "r") as f:
             config_dict = yaml.safe_load(f)
+            config_dict = remove_old_schemas(config_dict, schemas_catalogue_list)
 
         print(
             "{} - ℹ️ STARTING SCHEMA: {}".format(datetime.now(), schema_name)
@@ -1250,6 +1270,7 @@ def run_consolidation_upload(
     # Reopening config file to update config_dict (in case it has to be reused right after)
     with open(config_path, "r") as f:
         config_dict = yaml.safe_load(f)
+        config_dict = remove_old_schemas(config_dict, schemas_catalogue_list)
 
     # ## Consolidation Reports
     # ### Report by schema
