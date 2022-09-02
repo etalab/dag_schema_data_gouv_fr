@@ -4,6 +4,10 @@ Archivistes75/registre_entrees:
 CEREMA/schema-arrete-circulation-marchandises:
   consolidate: true
   publication: false
+LaMednum/standard-mediation-num:
+  consolidate: false
+  search_words:
+  - "Lieux de m\xE9diation num\xE9rique"
 MTES-MCT/acceslibre-schema:
   consolidate: true
   publication: false
@@ -53,12 +57,13 @@ etalab/schema-irve:
   - 1.0.3
   - 2.0.0
   - 2.0.1
+  - 2.0.2
   exclude_dataset_ids:
   - 54231d4a88ee38334b5b9e1d
-  latest_resource_ids:
-    2.0.2: 8d9398ae-3037-48b2-be19-412c24561fbb
-  publication: true
   geojson_resource_id: 7eee8f09-5d1b-4f48-a304-5e99e8da1e26
+  latest_resource_ids:
+    2.0.3: 8d9398ae-3037-48b2-be19-412c24561fbb
+  publication: true
   search_words:
   - "Infrastructures de recharge pour v\xE9hicules \xE9lectriques"
   - IRVE
@@ -82,8 +87,17 @@ etalab/schema-vehicules-faibles-emissions-renouvellement-parc:
   consolidated_dataset_id: 623e08af086bba04517431a3
   documentation_resource_id: 4b3c46ee-2778-4410-ac08-8cd4c606d800
   latest_resource_ids:
-    0.1.1: 63bca9ee-3bb4-4120-9a4f-49fd5d464f54
+    0.1.2: 4f3697c9-c36a-4cee-b887-0adc0b08cd6e
   publication: true
+  drop_versions:
+  - 0.1.1
+etalab/schema-vehicules-faibles-emissions-renouvellement-parc-synthese:
+  consolidate: false
+  search_words:
+  - "Part des v\xE9hicules \xE0 faibles \xE9missions dans le renouvellement des parcs\
+    \ d\u2019entreprises de location, location-vente, de cr\xE9dit-bail de v\xE9hicules,\
+    \ des plateformes de livraisons et des centrales de r\xE9servation de taxi et\
+    \ VTC"
 openmaraude/schema-stationstaxi:
   consolidate: true
   publication: false
