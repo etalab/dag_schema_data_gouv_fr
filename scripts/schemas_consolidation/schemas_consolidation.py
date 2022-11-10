@@ -770,12 +770,14 @@ def run_schemas_consolidation(
                                         dtype="str",
                                         encoding=encoding,
                                         na_filter=False,
+                                        keep_default_na=False,
                                     )
                                 else:
                                     df_r = pd.read_excel(
                                         file_path,
                                         dtype="str",
                                         na_filter=False,
+                                        keep_default_na=False,
                                         engine="openpyxl"
                                     )
 
@@ -847,7 +849,6 @@ def run_schemas_consolidation(
                                 ),
                                 index=False,
                                 encoding="utf-8",
-                                na_rep="null",
                             )
                             print(
                                 "{} -- ✅ DONE: {} version {}".format(
