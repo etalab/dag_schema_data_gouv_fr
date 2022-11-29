@@ -16,7 +16,7 @@ from dag_schema_data_gouv_fr.utils.geo import improve_geo_data_quality
 from dag_schema_data_gouv_fr.scripts.schemas_consolidation.schemas_consolidation import run_schemas_consolidation
 from dag_schema_data_gouv_fr.scripts.schemas_consolidation.consolidation_upload import run_consolidation_upload
 
-AIRFLOW_DAG_HOME='/opt/airflow/dags/'
+AIRFLOW_DAG_HOME='/var/lib/airflow/dags/'
 TMP_FOLDER='/tmp/'
 DAG_FOLDER = 'dag_schema_data_gouv_fr/'
 DAG_NAME = 'schemas_consolidation'

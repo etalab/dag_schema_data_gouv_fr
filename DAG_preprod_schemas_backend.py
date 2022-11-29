@@ -5,7 +5,7 @@ from datetime import timedelta, datetime
 from airflow.utils.dates import days_ago
 
 
-AIRFLOW_DAG_HOME='/opt/airflow/dags/'
+AIRFLOW_DAG_HOME='/var/lib/airflow/dags/'
 TMP_FOLDER='/tmp/'
 DAG_FOLDER = 'dag_schema_data_gouv_fr/'
 DAG_NAME = 'preprod_schemas_backend'
