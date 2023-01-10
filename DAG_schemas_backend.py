@@ -40,7 +40,7 @@ with DAG(
     clone_schema_repo = BashOperator(
         task_id='clone_schema_repo',
         bash_command='cd ' + TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/ " + \
-            '&& git clone ' + GIT_REPO ,
+            '&& git clone --depth 1 ' + GIT_REPO ,
     )
     
     run_nb = PapermillMinioOperator(
@@ -59,7 +59,7 @@ with DAG(
             "TMP_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/",
             "OUTPUT_DATA_FOLDER": TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/output/",
             "DATE_AIRFLOW": '{{ ds }}',
-            "LIST_SCHEMAS_YAML": 'https://raw.githubusercontent.com/etalab/schema.data.gouv.fr/master/repertoires.yml'
+            "LIST_SCHEMAS_YAML": 'https://raw.githubusercontent.com/etalab/schema.data.gouv.fr/main/repertoires.yml'
         }
     )
 
@@ -67,21 +67,21 @@ with DAG(
         task_id='copy_files',
         bash_command='cd ' + TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/" + \
             ' && mkdir site' + \
-            ' && cp -r schema.data.gouv.fr/site/site/*.md ./site/' + \
-            ' && cp -r schema.data.gouv.fr/site/site/.vuepress/ ./site/' + \
+            ' && cp -r schema.data.gouv.fr/site/*.md ./site/' + \
+            ' && cp -r schema.data.gouv.fr/site/.vuepress/ ./site/' + \
             ' && rm -rf ./site/.vuepress/public/schemas' + \
             ' && mkdir ./site/.vuepress/public/schemas' + \
             ' && cp -r data/* ./site/ ' + \
             ' && cp -r data2/* ./site/.vuepress/public/schemas' + \
             ' && cp ./site/.vuepress/public/schemas/*.json ./site/.vuepress/public/' + \
-            ' && rm -rf ./schema.data.gouv.fr/site/site' + \
-            ' && mv ./site ./schema.data.gouv.fr/site/'
+            ' && rm -rf ./schema.data.gouv.fr/site' + \
+            ' && mv ./site ./schema.data.gouv.fr/'
     )
 
     commit_changes = BashOperator(
         task_id='commit_changes',
         bash_command='cd ' + TMP_FOLDER + DAG_FOLDER + '{{ ds }}' + "/schema.data.gouv.fr" + \
-            ' && git add site/site/'+ \
+            ' && git add site/'+ \
             ' && git commit -m "Update Website ' + datetime.today().strftime('%Y-%m-%d') + '" || echo "No changes to commit"' \
             ' && git push origin master'
     )
