@@ -18,6 +18,10 @@ atlasante/schema-dae:
   consolidate: false
   search_words:
   - DAE
+cnigfr/schema-friches:
+  consolidate: false
+  search_words:
+  - Standard CNIG Friches
 datakode/schema-pei:
   consolidate: true
   publication: false
