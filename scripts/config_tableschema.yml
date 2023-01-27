@@ -50,7 +50,10 @@ etalab/schema-hautes-remunerations:
 etalab/schema-inclusion-numerique:
   consolidate: true
   publication: false
-etalab/schema-irve:
+etalab/schema-irve-dynamique:
+  consolidate: true
+  publication: false
+etalab/schema-irve-statique:
   consolidate: true
   consolidated_dataset_id: 5448d3e0c751df01f85d0572
   documentation_resource_id: 41b0514d-956d-4e42-80ef-1dcf88cc74e9
@@ -63,11 +66,12 @@ etalab/schema-irve:
   - 2.0.1
   - 2.0.2
   - 2.0.3
+  - 2.1.0
   exclude_dataset_ids:
   - 54231d4a88ee38334b5b9e1d
   geojson_resource_id: 7eee8f09-5d1b-4f48-a304-5e99e8da1e26
   latest_resource_ids:
-    2.1.0: 8d9398ae-3037-48b2-be19-412c24561fbb
+    2.2.0: 8d9398ae-3037-48b2-be19-412c24561fbb
   publication: true
   search_words:
   - "Infrastructures de recharge pour v\xE9hicules \xE9lectriques"

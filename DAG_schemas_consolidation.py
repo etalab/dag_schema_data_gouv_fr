@@ -151,7 +151,7 @@ with DAG(
         op_args=(API_URL, working_dir, tmp_folder, date_airflow, SCHEMA_CATALOG, TMP_CONFIG_FILE)
     )
 
-    schema_irve_path = os.path.join(tmp_folder, 'consolidated_data', 'etalab_schema-irve')
+    schema_irve_path = os.path.join(tmp_folder, 'consolidated_data', 'etalab_schema-irve-statique')
     schema_irve_cols = {
         'xy_coords': 'coordonneesXY',
         'code_insee': 'code_insee_commune',

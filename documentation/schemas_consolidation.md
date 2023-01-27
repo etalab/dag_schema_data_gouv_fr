@@ -48,7 +48,7 @@ Certains schémas ont d'autres spécifications qui rendent la phase de consolida
 
 ## Fichiers de configuration
 
-Les fichiers de configuration (YAML) permettent de paramétrer différents aspects du processus de consolidation. Chaque schéma contient sa configuration dans la clé qui porte son nom technique (exemple : `etalab/schema-irve`), configuration qui peut contenir les champs suivants :
+Les fichiers de configuration (YAML) permettent de paramétrer différents aspects du processus de consolidation. Chaque schéma contient sa configuration dans la clé qui porte son nom technique (exemple : `etalab/schema-irve-statique`), configuration qui peut contenir les champs suivants :
 
 - `consolidate` : `true` ou `false` pour choisir d'activer ou non la consolidation pour la totalité du schéma (quelque soit le reste du contenu de sa configuration, ce schéma sera ignoré dans toutes ses versions pour la consolidation si `consolidate=false`)
 - `consolidated_dataset_id` : string contenant l'ID de jeu de donnée de consolidation du schéma sur data.gouv.fr (généré automatiquement par le script si absent du fichier de configuration et `consolidate=true`)
@@ -62,7 +62,7 @@ Les fichiers de configuration (YAML) permettent de paramétrer différents aspec
 Pour le moment, sans intervention manuelle, tout nouveau schéma du catalogue officiel est ajouté au fichier de configuration avec comme configuration par défaut l'absence de consolidation, ainsi que son nom non-technique comme mot-clé par défaut pour la recherche de ressources via search :
 
 ```
-etalab/schema-irve:
+etalab/schema-irve-statique:
   consolidate: false
   search_words:
   - "Infrastructures de recharge pour v\xE9hicules \xE9lectriques"
@@ -71,7 +71,7 @@ etalab/schema-irve:
 Exemple de configuration plus complète :
 
 ```
-etalab/schema-irve:
+etalab/schema-irve-statique:
   consolidate: true
   consolidated_dataset_id: '5448d3e0c751df01f85d0572'
   latest_resource_ids:
