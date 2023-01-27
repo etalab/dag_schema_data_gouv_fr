@@ -814,7 +814,7 @@ def run_consolidation_upload(
                             )
 
                 # Update IRVE GeoJSON file
-                if schema_name == "etalab/schema-irve":
+                if schema_name == "etalab/schema-irve-statique":
                     upload_geojson(api_url, api_key, config_path, schema_consolidated_data_path, consolidation_date_str, schema_name)
             else:
                 schemas_report_dict[schema_name][
