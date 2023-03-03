@@ -1,3 +1,5 @@
+This repo is now included in [another repo](https://github.com/etalab/datagouvfr_data_pipelines)
+
 # Backend schema.data.gouv.fr
 
 Ce repo héberge l'ensemble des scripts d'automatisation liés au schéma de données sur schema.data.gouv.fr.
